@@ -1045,6 +1045,237 @@ def _build_options_advice(
     }
 
 
+def _compute_atr14(candles: List[Dict[str, Any]], period: int = 14) -> List[float]:
+    if not candles:
+        return []
+    tr_vals: List[float] = []
+    for i, c in enumerate(candles):
+        h = float(c["high"])
+        l = float(c["low"])
+        if i == 0:
+            tr_vals.append(max(0.0, h - l))
+        else:
+            pc = float(candles[i - 1]["close"])
+            tr_vals.append(max(h - l, abs(h - pc), abs(l - pc)))
+    return _sma(tr_vals, period)
+
+
+def detect_absorption_signals(candles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    识别主力吸筹 / 诱多派发与插针扫损（基于成交量放大、影线拒绝比率与收盘收回位置）.
+    """
+    n = len(candles)
+    if n < 22:
+        return []
+
+    atr14 = _compute_atr14(candles, 14)
+    vol_sma20 = _sma([float(c.get("volume", 0.0) or 0.0) for c in candles], 20)
+    raw_events: List[Dict[str, Any]] = []
+
+    for i in range(20, n):
+        c = candles[i]
+        high = float(c["high"])
+        low = float(c["low"])
+        op = float(c["open"])
+        cl = float(c["close"])
+        rng = high - low
+        atr_v = atr14[i] if i < len(atr14) else 0.0
+        if rng <= 0.0 or rng < 0.55 * atr_v:
+            continue
+
+        vol = float(c.get("volume", 0.0) or 0.0)
+        avg_vol = max(vol_sma20[i] if i < len(vol_sma20) else 0.0, 1e-9)
+        vol_ratio = vol / avg_vol if avg_vol > 1e-9 else 1.0
+
+        lower_wick = min(op, cl) - low
+        upper_wick = high - max(op, cl)
+        lower_pct = lower_wick / rng
+        upper_pct = upper_wick / rng
+        close_loc = (cl - low) / rng
+
+        prev_slice = candles[max(0, i - 15):i]
+        prior_low = min(float(x["low"]) for x in prev_slice)
+        prior_high = max(float(x["high"]) for x in prev_slice)
+        bull_sweep = (low < prior_low) and (cl > prior_low)
+        bear_sweep = (high > prior_high) and (cl < prior_high)
+
+        cand: Dict[str, Any] | None = None
+        if (vol_ratio >= 1.25 or bull_sweep) and lower_pct >= 0.42 and close_loc >= 0.55:
+            score = (
+                min(1.0, max(0.0, (vol_ratio - 0.9) / 1.6)) * 40.0
+                + min(1.0, lower_pct / 0.72) * 30.0
+                + min(1.0, close_loc / 0.85) * 20.0
+                + (10.0 if bull_sweep else 0.0)
+            )
+            if score >= 68.0:
+                grade = "A" if score >= 78.0 else "B"
+                label = (
+                    "🧲扫损吸筹A" if (bull_sweep and grade == "A")
+                    else ("🧲扫损吸筹" if bull_sweep else ("🧲主力吸筹A" if grade == "A" else "🧲下影承接"))
+                )
+                label_en = (
+                    "Sweep Absorb A" if (bull_sweep and grade == "A")
+                    else ("Sweep Absorb" if bull_sweep else ("Bull Absorb A" if grade == "A" else "Bull Absorb"))
+                )
+                cand = {
+                    "_idx": i,
+                    "time": c["time"],
+                    "price": round(low, 4),
+                    "type": "bull_absorb",
+                    "grade": grade,
+                    "score": round(score, 1),
+                    "vol_ratio": round(vol_ratio, 2),
+                    "sweep": bull_sweep,
+                    "label": label,
+                    "label_en": label_en,
+                }
+        elif (vol_ratio >= 1.25 or bear_sweep) and upper_pct >= 0.42 and (1.0 - close_loc) >= 0.55:
+            score = (
+                min(1.0, max(0.0, (vol_ratio - 0.9) / 1.6)) * 40.0
+                + min(1.0, upper_pct / 0.72) * 30.0
+                + min(1.0, (1.0 - close_loc) / 0.85) * 20.0
+                + (10.0 if bear_sweep else 0.0)
+            )
+            if score >= 68.0:
+                grade = "A" if score >= 78.0 else "B"
+                label = (
+                    "🔨诱多扫损A" if (bear_sweep and grade == "A")
+                    else ("🔨诱多扫损" if bear_sweep else ("🔨主力派发A" if grade == "A" else "🔨上影派发"))
+                )
+                label_en = (
+                    "Sweep Dist A" if (bear_sweep and grade == "A")
+                    else ("Sweep Dist" if bear_sweep else ("Bear Dist A" if grade == "A" else "Bear Dist"))
+                )
+                cand = {
+                    "_idx": i,
+                    "time": c["time"],
+                    "price": round(high, 4),
+                    "type": "bear_absorb",
+                    "grade": grade,
+                    "score": round(score, 1),
+                    "vol_ratio": round(vol_ratio, 2),
+                    "sweep": bear_sweep,
+                    "label": label,
+                    "label_en": label_en,
+                }
+
+        if cand is not None:
+            merged_idx = -1
+            for k in range(len(raw_events) - 1, -1, -1):
+                if cand["_idx"] - raw_events[k]["_idx"] > 3:
+                    break
+                if raw_events[k]["type"] == cand["type"]:
+                    merged_idx = k
+                    break
+            if merged_idx >= 0:
+                if cand["score"] > raw_events[merged_idx]["score"]:
+                    raw_events[merged_idx] = cand
+            else:
+                raw_events.append(cand)
+
+    out: List[Dict[str, Any]] = []
+    for ev in raw_events[-16:]:
+        ev_clean = {k: v for k, v in ev.items() if k != "_idx"}
+        out.append(ev_clean)
+    return out
+
+
+def detect_fvg_zones(candles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    识别尚未完全回补的机构失衡缺口 (Fair Value Gap)，并实时裁剪已回补部分。
+    """
+    n = len(candles)
+    if n < 18:
+        return []
+
+    atr14 = _compute_atr14(candles, 14)
+    last_price = float(candles[-1]["close"])
+    bull_zones: List[Dict[str, Any]] = []
+    bear_zones: List[Dict[str, Any]] = []
+
+    start_scan = max(15, n - 140)
+    for i in range(start_scan, n):
+        c0 = candles[i - 2]
+        c1 = candles[i - 1]
+        c2 = candles[i]
+        atr_v = max(atr14[i - 1] if i - 1 < len(atr14) else 0.0, float(c1["close"]) * 0.001)
+        disp_body = abs(float(c1["close"]) - float(c1["open"]))
+        if disp_body < 0.55 * atr_v:
+            continue
+
+        # Bullish FVG: c2.low > c0.high
+        if float(c2["low"]) > float(c0["high"]):
+            orig_top = float(c2["low"])
+            orig_bottom = float(c0["high"])
+            total_h = orig_top - orig_bottom
+            if total_h < 0.22 * atr_v:
+                continue
+            cur_top = orig_top
+            mitigated = False
+            for j in range(i + 1, n):
+                j_low = float(candles[j]["low"])
+                if j_low <= orig_bottom:
+                    mitigated = True
+                    break
+                if j_low < cur_top:
+                    cur_top = j_low
+            rem_h = cur_top - orig_bottom
+            if not mitigated and rem_h >= 0.08 * atr_v:
+                fill_pct = max(0.0, min(99.0, (orig_top - cur_top) / max(total_h, 1e-9) * 100.0))
+                mid = (cur_top + orig_bottom) / 2.0
+                bull_zones.append({
+                    "type": "bull",
+                    "start_time": c1["time"],
+                    "start_index": i - 1,
+                    "top": round(cur_top, 4),
+                    "bottom": round(orig_bottom, 4),
+                    "orig_top": round(orig_top, 4),
+                    "orig_bottom": round(orig_bottom, 4),
+                    "ce_mid": round((orig_top + orig_bottom) / 2.0, 4),
+                    "fill_pct": round(fill_pct, 1),
+                    "dist_pct": round((mid - last_price) / max(last_price, 1e-9) * 100.0, 2),
+                })
+
+        # Bearish FVG: c2.high < c0.low
+        elif float(c2["high"]) < float(c0["low"]):
+            orig_top = float(c0["low"])
+            orig_bottom = float(c2["high"])
+            total_h = orig_top - orig_bottom
+            if total_h < 0.22 * atr_v:
+                continue
+            cur_bottom = orig_bottom
+            mitigated = False
+            for j in range(i + 1, n):
+                j_high = float(candles[j]["high"])
+                if j_high >= orig_top:
+                    mitigated = True
+                    break
+                if j_high > cur_bottom:
+                    cur_bottom = j_high
+            rem_h = orig_top - cur_bottom
+            if not mitigated and rem_h >= 0.08 * atr_v:
+                fill_pct = max(0.0, min(99.0, (cur_bottom - orig_bottom) / max(total_h, 1e-9) * 100.0))
+                mid = (orig_top + cur_bottom) / 2.0
+                bear_zones.append({
+                    "type": "bear",
+                    "start_time": c1["time"],
+                    "start_index": i - 1,
+                    "top": round(orig_top, 4),
+                    "bottom": round(cur_bottom, 4),
+                    "orig_top": round(orig_top, 4),
+                    "orig_bottom": round(orig_bottom, 4),
+                    "ce_mid": round((orig_top + orig_bottom) / 2.0, 4),
+                    "fill_pct": round(fill_pct, 1),
+                    "dist_pct": round((mid - last_price) / max(last_price, 1e-9) * 100.0, 2),
+                })
+
+    bull_zones.sort(key=lambda z: abs((z["top"] + z["bottom"]) / 2.0 - last_price))
+    bear_zones.sort(key=lambda z: abs((z["top"] + z["bottom"]) / 2.0 - last_price))
+    selected = bull_zones[:3] + bear_zones[:3]
+    selected.sort(key=lambda z: z["start_time"])
+    return selected
+
+
 def analyze_structure(
     candles: List[Dict[str, Any]],
     ma_type: str = "ema",
@@ -1061,6 +1292,8 @@ def analyze_structure(
             "centers": [],
             "signals": [],
             "macd": [],
+            "absorption": [],
+            "fvg_zones": [],
             "dual_ma": compute_dual_ma(candles, ma_type, ma_fast, ma_slow),
             "vwap": compute_vwap(candles, interval),
             "buy_advice": None,
@@ -1142,6 +1375,8 @@ def analyze_structure(
     fibonacci = compute_fibonacci_confluence(candles, dual_ma)
     regime = detect_consolidation_regime(candles, dual_ma, market=market)
     vwap = compute_vwap(candles, interval)
+    absorption = detect_absorption_signals(candles)
+    fvg_zones = detect_fvg_zones(candles)
 
     return {
         "fractals": [{"index": f["index"], "time": f["time"], "price": round(f["price"], 4), "type": f["type"]} for f in fractals],
@@ -1149,6 +1384,8 @@ def analyze_structure(
         "segments": segments,
         "centers": centers,
         "signals": signals,
+        "absorption": absorption,
+        "fvg_zones": fvg_zones,
         "macd": macd,
         "dual_ma": dual_ma,
         "vwap": vwap,

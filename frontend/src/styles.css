@@ -4549,6 +4549,9 @@ body,
 .vpvr-guide-body b.cyan {
   color: #6effd4;
 }
+.vpvr-guide-body b.bull {
+  color: #ff8fa3;
+}
 
 /* Risk-Reward Interactive Control Bar */
 .rr-control-bar {

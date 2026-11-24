@@ -741,6 +741,20 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         });
       }
     }
+    // 5.3 主力吸筹 / 派发与插针扫损信号 (Absorption Radar)
+    if (layers.absorption && data.analysis.absorption?.length) {
+      for (const ab of data.analysis.absorption) {
+        const isBull = ab.type === 'bull_absorb';
+        markers.push({
+          time: ab.time as UTCTimestamp,
+          position: isBull ? 'belowBar' : 'aboveBar',
+          color: isBull ? '#ff3b5c' : '#00e5a3',
+          shape: isBull ? 'arrowUp' : 'arrowDown',
+          text: lang === 'zh' ? ab.label : ab.label_en,
+          size: ab.grade === 'A' ? 1.15 : 0.95,
+        });
+      }
+    }
     // 5.5 图上 20 / 60 均线扣抵光标箭头
     if (layers.deduct && data.candles.length > 22) {
       const lastClose = data.candles[data.candles.length - 1].close;
@@ -968,6 +982,71 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       ctx.textBaseline = 'middle';
       ctx.fillText(text, drawX + padX, drawY + boxH / 2 + 0.5);
     };
+
+    // 0.5 机构失衡缺口 (FVG Zones · 自动跟踪未回补区间)
+    if (layers.fvg && data?.analysis.fvg_zones?.length) {
+      const fvgRightEdge = layers.vpvr
+        ? Math.max(80, cssW - Math.min(138, Math.round(cssW * 0.16)) - 8)
+        : Math.max(80, cssW - 58);
+
+      for (const z of data.analysis.fvg_zones) {
+        const yTop = series.priceToCoordinate(z.top);
+        const yBot = series.priceToCoordinate(z.bottom);
+        if (yTop === null || yBot === null) continue;
+        const yT = Number(yTop);
+        const yB = Number(yBot);
+        if ((yT < 0 && yB < 0) || (yT > cssH && yB > cssH)) continue;
+
+        const rawX = mainChart.timeScale().timeToCoordinate(z.start_time as UTCTimestamp);
+        const x0 = rawX !== null ? Math.max(8, Math.min(fvgRightEdge - 40, Number(rawX))) : 8;
+        const boxY = Math.min(yT, yB);
+        const boxH = Math.max(3, Math.abs(yB - yT));
+        const boxW = Math.max(36, fvgRightEdge - x0);
+        const isBull = z.type === 'bull';
+
+        ctx.fillStyle = isBull ? 'rgba(255, 59, 92, 0.11)' : 'rgba(0, 229, 163, 0.10)';
+        ctx.fillRect(x0, boxY, boxW, boxH);
+
+        ctx.save();
+        ctx.strokeStyle = isBull ? 'rgba(255, 59, 92, 0.52)' : 'rgba(0, 229, 163, 0.50)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x0, boxY);
+        ctx.lineTo(x0 + boxW, boxY);
+        ctx.moveTo(x0, boxY + boxH);
+        ctx.lineTo(x0 + boxW, boxY + boxH);
+        ctx.stroke();
+
+        const yMid = series.priceToCoordinate(z.ce_mid);
+        if (yMid !== null && z.ce_mid >= z.bottom && z.ce_mid <= z.top && boxH >= 12) {
+          ctx.setLineDash([3, 4]);
+          ctx.strokeStyle = isBull ? 'rgba(255, 143, 163, 0.42)' : 'rgba(110, 255, 212, 0.42)';
+          ctx.beginPath();
+          ctx.moveTo(x0, Number(yMid));
+          ctx.lineTo(x0 + boxW, Number(yMid));
+          ctx.stroke();
+        }
+        ctx.restore();
+
+        if (!compact && cssW >= 480) {
+          const fillTxt = z.fill_pct >= 5 ? ` · 补${Math.round(z.fill_pct)}%` : '';
+          const lbl =
+            lang === 'zh'
+              ? `📦 ${isBull ? '多头FVG' : '空头FVG'} $${fmtPrice(z.bottom)}~$${fmtPrice(z.top)}${fillTxt}`
+              : `${isBull ? 'Bull FVG' : 'Bear FVG'} $${fmtPrice(z.bottom)}-$${fmtPrice(z.top)}`;
+          const pillX = Math.max(12, Math.min(x0 + 6, Math.max(12, fvgRightEdge - 340)));
+          drawPill(
+            lbl,
+            pillX,
+            boxY + boxH / 2,
+            isBull ? '#ff8fa3' : '#6effd4',
+            isBull ? 'rgba(32, 8, 16, 0.90)' : 'rgba(6, 26, 20, 0.90)',
+            isBull ? 'rgba(255, 59, 92, 0.52)' : 'rgba(0, 229, 163, 0.52)',
+            false
+          );
+        }
+      }
+    }
 
     // 1. VPVR 筹码分布密集峰 (Visible Range Volume Profile + Direct Annotations)
     if (layers.vpvr && candles.length >= 6) {
@@ -1290,7 +1369,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         }
       }
     }
-  }, [data, layers.vpvr, compact, rrTool, measurePts]);
+  }, [data, layers.vpvr, layers.fvg, compact, rrTool, measurePts, lang]);
 
   // Schedule HUD Canvas redraws on zoom/pan/scale/data updates
   useEffect(() => {
@@ -1536,7 +1615,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           </div>
         )}
 
-        {layers.vpvr && !compact && (
+        {(layers.vpvr || layers.fvg || layers.absorption) && !compact && (
           <div className={`vpvr-guide-card ${vpvrNoteCollapsed ? 'collapsed' : ''}`}>
             <button
               type="button"
@@ -1553,7 +1632,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
                 });
               }}
             >
-              <span>💡 筹码峰 (VPVR) 看盘注释</span>
+              <span>💡 筹码峰 / FVG缺口 / 主力吸筹 看盘注释</span>
               <span>{vpvrNoteCollapsed ? '▾' : '▴'}</span>
             </button>
             {!vpvrNoteCollapsed && (
@@ -1566,6 +1645,12 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
                 </div>
                 <div>
                   <b className="cyan">🕳️ 最短凹槽 (筹码真空区)</b>：挂单极薄的空白价格带，一旦冲进去常像滑雪一样滑行极快。
+                </div>
+                <div>
+                  <b className="bull">📦 红/绿横带 (机构缺口 FVG)</b>：主力急拉/急砸留下的未成交失衡区，价格极易像磁铁一样回抽修补，完全补完自动消失。
+                </div>
+                <div>
+                  <b className="gold">🧲 扫损吸筹 / 🔨 诱多派发</b>：放量刺破前低/前高止损池后迅速收长影线拉回，往往代表主力承接吸筹或诱多砸盘。
                 </div>
               </div>
             )}

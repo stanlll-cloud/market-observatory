@@ -188,12 +188,39 @@ export interface VwapData {
   above: boolean;
 }
 
+export interface AbsorptionSignal {
+  time: number;
+  price: number;
+  type: 'bull_absorb' | 'bear_absorb';
+  grade: 'A' | 'B';
+  score: number;
+  vol_ratio: number;
+  sweep: boolean;
+  label: string;
+  label_en: string;
+}
+
+export interface FvgZone {
+  type: 'bull' | 'bear';
+  start_time: number;
+  start_index: number;
+  top: number;
+  bottom: number;
+  orig_top: number;
+  orig_bottom: number;
+  ce_mid: number;
+  fill_pct: number;
+  dist_pct: number;
+}
+
 export interface AnalysisData {
   fractals: Fractal[];
   strokes: Stroke[];
   segments: Segment[];
   centers: Center[];
   signals: Signal[];
+  absorption?: AbsorptionSignal[];
+  fvg_zones?: FvgZone[];
   dual_ma?: DualMaData;
   vwap?: VwapData | null;
   fibonacci?: FibonacciData | null;
@@ -565,6 +592,8 @@ export interface LayerToggles {
   dual_ma: boolean;
   vwap: boolean;
   vpvr: boolean;
+  fvg: boolean;
+  absorption: boolean;
   deduct: boolean;
   compare: boolean;
   fib: boolean;
