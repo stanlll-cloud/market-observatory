@@ -25,4 +25,5 @@ windows-app/*.spec
 *.zip
 /build/
 /dist/
+/tools/
 *.spec
