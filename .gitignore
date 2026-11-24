@@ -1,0 +1,28 @@
+# Python & virtualenvs
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs & OS files
+logs/
+*.log
+.DS_Store
+Thumbs.db
+
+# Node dependencies (keep frontend/dist tracked for source quickstart)
+frontend/node_modules/
+
+# Binary installers & build artifacts (published to GitHub Releases)
+frontend/public/downloads/
+frontend/dist/downloads/
+macos-app/*.app/
+macos-app/*.iconset/
+windows-app/*.spec
+*.dmg
+*.exe
+*.zip
+/build/
+/dist/
+*.spec

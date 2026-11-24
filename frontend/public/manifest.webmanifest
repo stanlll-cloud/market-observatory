@@ -1,0 +1,25 @@
+{
+  "name": "观势 · Market Observatory",
+  "short_name": "观势看盘",
+  "description": "缠论结构 · 均线扣抵 · 量化雷达 · 宏观财报日历工作台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050c0a",
+  "theme_color": "#050c0a",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
