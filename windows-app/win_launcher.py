@@ -19,6 +19,7 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import urllib.request
 import webbrowser
 from pathlib import Path
@@ -132,26 +133,49 @@ def _wait_for_health(port: int, timeout_sec: float = 12.0) -> bool:
     return False
 
 
-def _run_headless_check() -> int:
-    port = _pick_free_port(18766, 18900)
-    server, thread = _start_threaded_server(port)
+def _write_check_log(check_log: str, msg: str) -> None:
+    if check_log:
+        try:
+            Path(check_log).write_text(msg, encoding="utf-8")
+        except Exception:
+            pass
+
+
+def _run_headless_check(check_log: str = "") -> int:
+    server = None
+    thread = None
     try:
+        port = _pick_free_port(18766, 18900)
+        server, thread = _start_threaded_server(port)
         if not _wait_for_health(port, timeout_sec=12.0):
-            print("SELF_TEST_FAIL: health check timed out", file=sys.stderr)
+            msg = "SELF_TEST_FAIL: health check timed out\n"
+            _write_check_log(check_log, msg)
+            print(msg.strip(), file=sys.stderr)
             return 1
 
         opener = _no_proxy_opener()
         with opener.open(f"http://127.0.0.1:{port}/", timeout=5.0) as resp:
             body = resp.read().decode("utf-8", errors="ignore")
             if resp.status != 200 or "<title>" not in body.lower():
-                print(f"SELF_TEST_FAIL: unexpected root status={resp.status}", file=sys.stderr)
+                msg = f"SELF_TEST_FAIL: unexpected root status={resp.status}\n"
+                _write_check_log(check_log, msg)
+                print(msg.strip(), file=sys.stderr)
                 return 1
 
+        _write_check_log(check_log, "SELF_TEST_OK\n")
         print("SELF_TEST_OK")
         return 0
+    except Exception:
+        tb = traceback.format_exc()
+        msg = f"SELF_TEST_FAIL:\n{tb}"
+        _write_check_log(check_log, msg)
+        print(msg, file=sys.stderr)
+        return 1
     finally:
-        server.should_exit = True
-        thread.join(timeout=3.0)
+        if server is not None:
+            server.should_exit = True
+        if thread is not None:
+            thread.join(timeout=3.0)
 
 
 def _run_server_only(port: int) -> int:
@@ -339,12 +363,13 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description="Market Observatory Desktop Launcher")
     parser.add_argument("--headless-check", action="store_true", help="Run smoke self-test and exit")
+    parser.add_argument("--check-log", default="", help="Optional file path to write smoke test output")
     parser.add_argument("--server-only", action="store_true", help="Run embedded backend server only")
     parser.add_argument("--port", type=int, default=8766, help="Server port for --server-only")
     args = parser.parse_args()
 
     if args.headless_check:
-        return _run_headless_check()
+        return _run_headless_check(args.check_log)
     if args.server_only:
         return _run_server_only(args.port)
     return _run_desktop_gui()

@@ -65,10 +65,15 @@ jobs:
       - name: Run Windows smoke test
         shell: pwsh
         run: |
-          $out = & .\dist\MarketObservatory-Win64.exe --headless-check 2>&1
-          Write-Host $out
-          if ($LASTEXITCODE -ne 0 -or ($out -notmatch "SELF_TEST_OK")) {
-            throw "Windows headless check failed!"
+          $p = Start-Process -FilePath ".\dist\MarketObservatory-Win64.exe" -ArgumentList "--headless-check","--check-log","headless_check.log" -Wait -PassThru
+          if (Test-Path "headless_check.log") {
+            Get-Content "headless_check.log"
+          } else {
+            Write-Host "No headless_check.log produced (exit=$($p.ExitCode))"
+          }
+          $logText = if (Test-Path "headless_check.log") { Get-Content "headless_check.log" -Raw } else { "" }
+          if ($p.ExitCode -ne 0 -or ($logText -notmatch "SELF_TEST_OK")) {
+            throw "Windows headless check failed (exit=$($p.ExitCode))"
           }
 
       - name: Create portable Windows ZIP bundle
