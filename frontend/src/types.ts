@@ -471,7 +471,7 @@ export interface RadarResponse {
   ts: number;
 }
 
-export type ViewMode = 'workbench' | 'radar' | 'calendar';
+export type ViewMode = 'workbench' | 'radar' | 'calendar' | 'etf_plan';
 
 export interface EarningsWarning {
   symbol: string;
@@ -604,4 +604,164 @@ export interface LayerToggles {
   signals: boolean;
   projection: boolean;
   fractals: boolean;
+}
+
+export interface EtfLinePoint {
+  time: number;
+  value: number;
+}
+
+export interface EtfBenchmarkTranche {
+  id: number;
+  pct: number;
+  label_zh: string;
+  desc_zh: string;
+  trigger_price: number;
+  triggered: boolean;
+}
+
+export interface EtfBenchmarkPlan {
+  symbol: 'QQQ' | 'SPY';
+  name_zh: string;
+  name_en: string;
+  price: number;
+  change_pct: number;
+  session: string;
+  session_zh: string;
+  ema20: number;
+  sma60: number;
+  sma120: number;
+  sma200: number;
+  rsi14: number;
+  high_52w: number;
+  drawdown_from_high_pct: number;
+  dist_sma200_pct: number;
+  dist_ema20_pct: number;
+  unlock_3x_price: number;
+  hard_stop_3x_price: number;
+  euphoria_t1_price: number;
+  euphoria_t2_price: number;
+  zone1_price: number;
+  zone2_price: number;
+  zone3_price: number;
+  zone4_price: number;
+  zone_mode?: 'ma_bull' | 'dd_bear';
+  tranches?: EtfBenchmarkTranche[];
+  dd15_price: number;
+  dd25_price: number;
+  dd35_price: number;
+  allow_3x_right_side: boolean;
+  hard_stop_triggered: boolean;
+  regime_code:
+    | 'BULL_HEALTHY'
+    | 'BULL_PULLBACK'
+    | 'BULL_OVERHEAT'
+    | 'BEAR_WATCH'
+    | 'BEAR_DEEP_CRASH';
+  regime_label_zh: string;
+  regime_label_en: string;
+  regime_summary_zh: string;
+  candles: Candle[];
+  ema20_line: EtfLinePoint[];
+  sma60_line: EtfLinePoint[];
+  sma120_line: EtfLinePoint[];
+  sma200_line: EtfLinePoint[];
+}
+
+export interface Etf3xRightSideStep {
+  benchmark_trigger: number;
+  est_3x_price: number;
+  pct_share: number;
+  rule_zh: string;
+}
+
+export interface Etf3xGun {
+  gun: number;
+  label_zh: string;
+  dd_label: string;
+  pct_share: number;
+  benchmark_trigger: number;
+  est_3x_price: number;
+  triggered?: boolean;
+  rule_zh: string;
+}
+
+export interface Etf3xExitRule {
+  type: 'hard_stop' | 'euphoria_trim' | 'bear_rebound';
+  title_zh: string;
+  trigger_zh: string;
+  est_3x_price: number;
+  action_zh: string;
+}
+
+export interface Etf3xTiming {
+  symbol: 'TQQQ' | 'UPRO';
+  name_zh: string;
+  benchmark_symbol: 'QQQ' | 'SPY';
+  price: number;
+  change_pct: number;
+  rsi14: number;
+  high_52w: number;
+  drawdown_pct: number;
+  benchmark_price: number;
+  benchmark_sma200: number;
+  benchmark_ema20: number;
+  benchmark_sma60: number;
+  benchmark_dist_sma200_pct: number;
+  above_sma200: boolean;
+  breakout_unlocked: boolean;
+  status_code: 'BULL_OPEN' | 'BUFFER_ZONE' | 'BEAR_LOCKED';
+  status_zh: string;
+  right_side_breakout: Etf3xRightSideStep;
+  right_side_pullback: Etf3xRightSideStep;
+  left_side_guns: Etf3xGun[];
+  exit_rules: Etf3xExitRule[];
+  benchmark_52w_high: number;
+}
+
+export interface EtfLiveItem {
+  symbol: string;
+  name_zh: string;
+  layer: number;
+  layer_name_zh: string;
+  weight_pct: number;
+  price: number;
+  change_pct: number;
+  session_zh: string;
+  payout_freq: 'monthly' | 'quarterly';
+  payout_freq_zh: string;
+  ttm_div_usd: number;
+  ttm_yield_pct: number;
+  return_1y_pct: number | null;
+  cagr_3y_pct: number | null;
+  cagr_10y_pct: number | null;
+  history_note_zh: string;
+  max_dd_pct: number;
+  maint_margin_pct: number;
+  margin_allowed: boolean;
+  tax_note_zh: string;
+  role_zh: string;
+  verdict: 'core' | 'hold' | 'shield' | 'tactical' | 'exclude';
+}
+
+export interface EtfPlanResponse {
+  updated_at: string;
+  updated_ts: number;
+  et_date: string;
+  market_session: {
+    session: string;
+    session_zh: string;
+    session_en: string;
+  };
+  ibkr_margin_apr_pct: number;
+  w8ben_tax_pct: number;
+  defaults: {
+    principal_usd: number;
+    leverage_ratio: number;
+    x3_choice: 'TQQQ' | 'UPRO' | 'split';
+    held_shares: Record<string, number>;
+  };
+  benchmarks: Record<'QQQ' | 'SPY', EtfBenchmarkPlan>;
+  leveraged_timing: Record<'TQQQ' | 'UPRO', Etf3xTiming>;
+  etfs: EtfLiveItem[];
 }

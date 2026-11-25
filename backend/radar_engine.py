@@ -26,8 +26,11 @@ from market_data import (
 )
 
 # 排除出纯美股温度计统计的非美股正股/对冲资产
-EXCLUDED_TEMP_SYMBOLS = frozenset({"SQQQ", "VIXY", "TLT", "GLD", "IBIT", "MSTR", "COIN", "QQQ", "SPY", "IWM", "TQQQ", "SOXL"})
-HEDGE_INVERSE_SYMBOLS = frozenset({"SQQQ", "VIXY", "TLT", "GLD"})
+EXCLUDED_TEMP_SYMBOLS = frozenset({
+    "SQQQ", "VIXY", "TLT", "GLD", "IBIT", "MSTR", "COIN", "QQQ", "SPY", "IWM", "TQQQ", "SOXL",
+    "QQQI", "SPYI", "SGOV", "SPMO", "QQQM", "SCHD", "UPRO", "RSP",
+})
+HEDGE_INVERSE_SYMBOLS = frozenset({"SQQQ", "VIXY", "TLT", "GLD", "SGOV"})
 
 _radar_state: Optional[Dict[str, Any]] = None
 _radar_task: Optional[asyncio.Task] = None

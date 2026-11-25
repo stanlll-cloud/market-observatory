@@ -283,7 +283,7 @@ YAHOO_INTERVAL_MAP = {
     "30m": ("30m", "60d"),
     "1h": ("60m", "3mo"),
     "4h": ("60m", "3mo"),
-    "1d": ("1d", "1y"),
+    "1d": ("1d", "2y"),
     "1w": ("1wk", "3y"),
 }
 
@@ -761,6 +761,14 @@ US_CATALOG = [
     {"symbol": "GLD", "name": "黄金 ETF", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "gld gold 黄金 etf"},
     {"symbol": "IWM", "name": "罗素2000 小盘ETF", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "iwm russell 罗素 小盘 etf"},
     {"symbol": "VIXY", "name": "恐慌指数 VIXY ETF", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "vixy vix 恐慌 波动率 对冲"},
+    {"symbol": "QQQI", "name": "NEOS 纳指高息 QQQI", "exchange": "NASDAQ", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "qqqi neos 纳指 月息 高息 备兑 etf"},
+    {"symbol": "SPYI", "name": "NEOS 标普高息 SPYI", "exchange": "NYSE", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "spyi neos 标普 月息 高息 备兑 etf"},
+    {"symbol": "SGOV", "name": "0-3月短债避险 SGOV", "exchange": "NYSE", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "sgov 国债 短债 美债 月息 避险 防爆 etf"},
+    {"symbol": "SPMO", "name": "标普500动量 SPMO", "exchange": "NYSE", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "spmo 标普 动量 进攻 etf"},
+    {"symbol": "QQQM", "name": "纳指100低费版 QQQM", "exchange": "NASDAQ", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "qqqm 纳指 长持 低费 etf"},
+    {"symbol": "SCHD", "name": "高股息红利 SCHD", "exchange": "NYSE", "sector": "美股ETF配置", "sector_en": "US ETF Plan", "alias": "schd 高股息 红利 价值 压仓 etf"},
+    {"symbol": "UPRO", "name": "3倍做多标普 UPRO", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "upro 3倍 标普 三倍做多 杠杆 etf"},
+    {"symbol": "RSP", "name": "标普等权重 RSP", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "rsp 等权 标普 对比 etf"},
 ]
 
 

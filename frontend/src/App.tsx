@@ -13,10 +13,12 @@ import {
 import { ChartPanel } from './components/ChartPanel';
 import { RadarPage } from './components/RadarPage';
 import { CalendarPage } from './components/CalendarPage';
+import { EtfPlanPage } from './components/EtfPlanPage';
 import type {
   AnalyzeResponse,
   CalendarResponse,
   Candle,
+  EtfPlanResponse,
   LangType,
   LayerToggles,
   MacroIntelResponse,
@@ -73,12 +75,15 @@ export function App() {
     const v = new URLSearchParams(window.location.search).get('view');
     if (v === 'radar') return 'radar';
     if (v === 'calendar') return 'calendar';
+    if (v === 'etf_plan') return 'etf_plan';
     return 'workbench';
   });
   const [radarData, setRadarData] = useState<RadarResponse | null>(null);
   const [radarLoading, setRadarLoading] = useState<boolean>(false);
   const [calendarData, setCalendarData] = useState<CalendarResponse | null>(null);
   const [calendarLoading, setCalendarLoading] = useState<boolean>(false);
+  const [etfPlanData, setEtfPlanData] = useState<EtfPlanResponse | null>(null);
+  const [etfPlanLoading, setEtfPlanLoading] = useState<boolean>(false);
   const [downloadModalOpen, setDownloadModalOpen] = useState<boolean>(false);
   const [displayMenuOpen, setDisplayMenuOpen] = useState<boolean>(false);
   const [uiZoomPct, setUiZoomPct] = useState<number>(() => {
@@ -386,6 +391,7 @@ export function App() {
       const url = new URL(window.location.href);
       if (mode === 'radar') url.searchParams.set('view', 'radar');
       else if (mode === 'calendar') url.searchParams.set('view', 'calendar');
+      else if (mode === 'etf_plan') url.searchParams.set('view', 'etf_plan');
       else url.searchParams.delete('view');
       window.history.replaceState({}, '', url.toString());
     } catch {
@@ -437,6 +443,36 @@ export function App() {
       loadCalendar(true);
     }
   }, [viewMode, calendarData, loadCalendar]);
+
+  const loadEtfPlan = useCallback(async (force = false) => {
+    if (force) setEtfPlanLoading(true);
+    try {
+      const res = await fetch(`/api/etf-plan${force ? '?force=1' : ''}`);
+      const json: EtfPlanResponse = await res.json();
+      if (json && json.benchmarks && Array.isArray(json.etfs)) {
+        setEtfPlanData(json);
+      }
+    } catch {
+      // ignore transient etf plan fetch errors
+    } finally {
+      if (force) setEtfPlanLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => loadEtfPlan(false), 1800);
+    const id = window.setInterval(() => loadEtfPlan(false), 180000);
+    return () => {
+      window.clearTimeout(t);
+      window.clearInterval(id);
+    };
+  }, [loadEtfPlan]);
+
+  useEffect(() => {
+    if (viewMode === 'etf_plan' && !etfPlanData) {
+      loadEtfPlan(true);
+    }
+  }, [viewMode, etfPlanData, loadEtfPlan]);
 
   // Load Radar Snapshot on mount + every 30s (retry fast if cold-start empty)
   const loadRadar = useCallback(async (force = false) => {
@@ -939,6 +975,14 @@ export function App() {
       },
       {
         kind: 'action',
+        id: 'act:etf',
+        title: '🏦 打开美股 ETF 投资计划',
+        sub: 'QQQ/SPY 大盘 SMA200 择时、月息养保证金与 TQQQ/UPRO 出入点',
+        badge: '视图 ⌘4',
+        run: () => switchViewMode('etf_plan'),
+      },
+      {
+        kind: 'action',
         id: 'act:dual',
         title: dualChartMode ? '🪟 关闭双图联动' : '🪟 开启多周期双图联动',
         sub: '左右并排同时看小周期买点与大周期趋势',
@@ -1175,6 +1219,13 @@ export function App() {
                 <span className="vs-badge cal">{calendarData?.urgent_48h_count}</span>
               )}
             </button>
+            <button
+              type="button"
+              className={`vs-btn etf-plan ${viewMode === 'etf_plan' ? 'active' : ''}`}
+              onClick={() => switchViewMode('etf_plan')}
+            >
+              <span>🏦 {lang === 'zh' ? '美股 ETF 计划' : 'ETF Plan'}</span>
+            </button>
           </div>
         </div>
 
@@ -1334,17 +1385,19 @@ export function App() {
                 loadRadar(true);
               } else if (viewMode === 'calendar') {
                 loadCalendar(true);
+              } else if (viewMode === 'etf_plan') {
+                loadEtfPlan(true);
               } else {
                 loadAnalysis(market, symbol, interval, replayIndex, maConfig, false, true);
                 loadMacro(market, symbol, true);
                 loadRadar(true);
               }
             }}
-            disabled={loading || radarLoading || calendarLoading}
+            disabled={loading || radarLoading || calendarLoading || etfPlanLoading}
           >
             <RefreshCw
               size={14}
-              className={loading || radarLoading || calendarLoading ? 'spin' : ''}
+              className={loading || radarLoading || calendarLoading || etfPlanLoading ? 'spin' : ''}
             />
             <span>{lang === 'zh' ? '刷新行情' : 'Refresh'}</span>
           </button>
@@ -1413,6 +1466,24 @@ export function App() {
             setReplayIndex(-1);
             setMarket('us');
             setSymbol(sym);
+            switchViewMode('workbench');
+            setMobileTab('chart');
+          }}
+        />
+      )}
+      {viewMode === 'etf_plan' && (
+        <EtfPlanPage
+          data={etfPlanData}
+          loading={etfPlanLoading}
+          lang={lang}
+          onRefresh={() => loadEtfPlan(true)}
+          onBackToWorkbench={() => switchViewMode('workbench')}
+          onJumpToSymbol={(sym) => {
+            setIsPlaying(false);
+            setReplayIndex(-1);
+            setMarket('us');
+            setSymbol(sym);
+            setIntervalVal('1d');
             switchViewMode('workbench');
             setMobileTab('chart');
           }}
@@ -3072,6 +3143,13 @@ export function App() {
             )}
           </span>
           <span>{lang === 'zh' ? '避雷' : 'Guard'}</span>
+        </button>
+        <button
+          className={`mbn-btn ${viewMode === 'etf_plan' ? 'active' : ''}`}
+          onClick={() => switchViewMode('etf_plan')}
+        >
+          <span className="mbn-ico">🏦</span>
+          <span>{lang === 'zh' ? 'ETF' : 'ETF'}</span>
         </button>
         <button
           className={`mbn-btn ${viewMode === 'workbench' && mobileTab === 'intel' ? 'active' : ''}`}

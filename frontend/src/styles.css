@@ -3126,6 +3126,11 @@ body,
   color: #ffe570;
   border-color: rgba(255, 212, 0, 0.45);
 }
+.vs-btn.etf-plan.active {
+  background: linear-gradient(135deg, rgba(24, 201, 143, 0.2), rgba(245, 196, 81, 0.16));
+  color: #6effd4;
+  border-color: rgba(24, 201, 143, 0.55);
+}
 .vs-badge.cal,
 .mbn-badge.cal {
   background: rgba(255, 59, 92, 0.9);
@@ -4183,7 +4188,8 @@ body,
 .app-shell[data-web-zoom='web'] .replay-bar,
 .app-shell[data-web-zoom='web'] .paper-trade-bar,
 .app-shell[data-web-zoom='web'] .radar-page,
-.app-shell[data-web-zoom='web'] .calendar-page {
+.app-shell[data-web-zoom='web'] .calendar-page,
+.app-shell[data-web-zoom='web'] .etf-plan-page {
   zoom: var(--obs-ui-zoom, 1);
 }
 
@@ -4841,4 +4847,937 @@ body,
   background: rgba(167, 139, 250, 0.14);
   border-color: rgba(167, 139, 250, 0.45);
   color: #ddd6fe;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   US ETF Margin & SMA200 Timing Plan Page (.etf-plan-page)
+   ════════════════════════════════════════════════════════════════ */
+.etf-plan-page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 80px;
+}
+
+.etf-plan-inner {
+  max-width: 1560px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.etf-session-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(24, 201, 143, 0.12);
+  border: 1px solid rgba(24, 201, 143, 0.35);
+  color: #6effd4;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.etf-hero-panel {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(16, 42, 34, 0.94), rgba(8, 20, 16, 0.98) 65%, rgba(245, 196, 81, 0.08));
+  border: 1px solid rgba(24, 201, 143, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.etf-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(28, 62, 50, 0.6);
+}
+
+.etf-ctrl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.etf-ctrl-group label {
+  font-size: 11px;
+  color: #8aaea1;
+  font-weight: 600;
+}
+
+.etf-preset-row,
+.etf-held-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.etf-held-inputs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: #a9c7bc;
+  font-family: var(--mono);
+}
+
+.etf-chip {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(124, 160, 148, 0.28);
+  background: rgba(11, 24, 20, 0.9);
+  color: #cfe6de;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.14s ease;
+  white-space: nowrap;
+}
+
+.etf-chip:hover {
+  border-color: rgba(24, 201, 143, 0.65);
+  color: #fff;
+}
+
+.etf-chip.active {
+  background: rgba(24, 201, 143, 0.18);
+  border-color: #18c98f;
+  color: #6effd4;
+}
+
+.etf-num-input {
+  width: 86px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(124, 160, 148, 0.35);
+  background: #06100d;
+  color: #f8fafc;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.etf-num-input.sm {
+  width: 60px;
+}
+
+.etf-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.etf-kpi-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(7, 17, 14, 0.88);
+  border: 1px solid rgba(28, 62, 50, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ekc-label {
+  font-size: 11.5px;
+  color: #8aaea1;
+  font-weight: 600;
+}
+
+.ekc-val {
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ekc-val.emerald,
+.emerald {
+  color: #00e5a3;
+}
+
+.ekc-val.danger,
+.danger {
+  color: #ff3b5c;
+}
+
+.gold {
+  color: #ffd400;
+}
+
+.up {
+  color: #ff3b5c;
+}
+
+.dn {
+  color: #00e5a3;
+}
+
+.ekc-badge {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 229, 163, 0.16);
+  border: 1px solid rgba(0, 229, 163, 0.45);
+  color: #6effd4;
+}
+
+.ekc-sub {
+  font-size: 11.5px;
+  color: #8aaea1;
+  line-height: 1.45;
+}
+
+.ekc-bench-pills {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ekc-bpill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: rgba(15, 34, 28, 0.8);
+  border: 1px solid rgba(28, 62, 50, 0.7);
+}
+
+.ekc-bpill.bull em {
+  color: #00e5a3;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.ekc-bpill.bear em {
+  color: #ff3b5c;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* 2. Benchmark K-Line + Execution Tranche Checklist */
+.etf-bench-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.52fr) minmax(340px, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.etf-bench-chart-card,
+.etf-tranche-card,
+.etf-3x-section,
+.etf-table-section,
+.etf-ledger-card {
+  padding: 15px 16px;
+  border-radius: 12px;
+  background: rgba(10, 22, 18, 0.94);
+  border: 1px solid rgba(28, 62, 50, 0.7);
+}
+
+.ebc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ebc-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ebc-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(124, 160, 148, 0.25);
+  background: rgba(7, 17, 14, 0.9);
+  color: #a9c7bc;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ebc-tab.active {
+  background: rgba(24, 201, 143, 0.14);
+  border-color: #18c98f;
+  color: #f8fafc;
+}
+
+.ebc-regime-pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.ebc-regime-pill.bull {
+  background: rgba(0, 229, 163, 0.15);
+  border: 1px solid rgba(0, 229, 163, 0.45);
+  color: #6effd4;
+}
+
+.ebc-regime-pill.warn {
+  background: rgba(255, 212, 0, 0.15);
+  border: 1px solid rgba(255, 212, 0, 0.45);
+  color: #ffe570;
+}
+
+.ebc-regime-pill.bear {
+  background: rgba(255, 59, 92, 0.16);
+  border: 1px solid rgba(255, 59, 92, 0.5);
+  color: #ff8aa0;
+}
+
+.ebc-verdict-banner {
+  padding: 8px 11px;
+  border-radius: 8px;
+  background: rgba(24, 201, 143, 0.08);
+  border-left: 3px solid #18c98f;
+  color: #d7ede5;
+  font-size: 12px;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.ebc-ohlc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #93b5a9;
+  padding: 6px 8px;
+  background: #07110e;
+  border: 1px solid rgba(28, 62, 50, 0.55);
+  border-radius: 7px 7px 0 0;
+}
+
+.ebc-ma-legend {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ebc-ma-legend .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 3px;
+}
+
+.ebc-ma-legend .dot.ema20 { background: #f8fafc; }
+.ebc-ma-legend .dot.sma60 { background: #f5c451; }
+.ebc-ma-legend .dot.sma120 { background: #38bdf8; }
+.ebc-ma-legend .dot.sma200 { background: #e879f9; }
+.ebc-ma-legend .dot.rsi { background: #18c98f; }
+
+.ebc-canvas-wrap {
+  width: 100%;
+  height: 380px;
+  background: #07110e;
+  border: 1px solid rgba(28, 62, 50, 0.55);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.ebc-loading {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7ca094;
+  font-size: 13px;
+}
+
+.etf-tranche-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.etc-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.etc-head h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+.etc-head span {
+  font-size: 11px;
+  color: #7ca094;
+}
+
+.etc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.etc-row {
+  padding: 10px 11px;
+  border-radius: 9px;
+  background: rgba(7, 17, 14, 0.9);
+  border: 1px solid rgba(28, 62, 50, 0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.etc-row.triggered {
+  border-color: rgba(0, 229, 163, 0.55);
+  background: rgba(14, 40, 32, 0.72);
+}
+
+.etc-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.etc-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.etc-trig-badge {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+.etc-trig-badge.on {
+  background: rgba(0, 229, 163, 0.18);
+  color: #6effd4;
+}
+
+.etc-row-desc {
+  font-size: 11.5px;
+  color: #8aaea1;
+  line-height: 1.4;
+}
+
+.etc-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.etc-amt {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd400;
+}
+
+.etc-shares-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.etc-share-pill {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(24, 201, 143, 0.12);
+  border: 1px solid rgba(24, 201, 143, 0.3);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #bfe9da;
+}
+
+/* 3. Dedicated 3x ETF Timing Section */
+.etf-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.etf-section-head h2 {
+  margin: 0 0 3px;
+  font-size: 15.5px;
+  color: #f8fafc;
+}
+
+.etf-section-head p {
+  margin: 0;
+  font-size: 12px;
+  color: #8aaea1;
+}
+
+.etf-3x-rule-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  background: rgba(255, 59, 92, 0.12);
+  border: 1px solid rgba(255, 59, 92, 0.4);
+  color: #ff9eb0;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.etf-3x-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.etf-3x-card {
+  padding: 14px;
+  border-radius: 10px;
+  background: rgba(7, 17, 14, 0.92);
+  border: 1px solid rgba(28, 62, 50, 0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.etf-3x-card.dimmed {
+  opacity: 0.62;
+}
+
+.e3c-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.e3c-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.e3c-sym {
+  font-size: 16px;
+  color: #f8fafc;
+}
+
+.e3c-price {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffd400;
+}
+
+.e3c-status {
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.e3c-status.BULL_OPEN {
+  background: rgba(0, 229, 163, 0.18);
+  color: #6effd4;
+}
+
+.e3c-status.BUFFER_ZONE {
+  background: rgba(255, 212, 0, 0.16);
+  color: #ffe570;
+}
+
+.e3c-status.BEAR_LOCKED {
+  background: rgba(255, 59, 92, 0.18);
+  color: #ff8aa0;
+}
+
+.e3c-meta {
+  font-size: 11.5px;
+  color: #8aaea1;
+  margin-top: 4px;
+}
+
+.e3c-budget-bar {
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: rgba(24, 201, 143, 0.1);
+  border: 1px solid rgba(24, 201, 143, 0.3);
+  font-size: 12px;
+  color: #cfe6de;
+}
+
+.e3c-sub-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.e3c-sub-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.e3c-sub-title.bull { color: #00e5a3; }
+.e3c-sub-title.left { color: #38bdf8; }
+.e3c-sub-title.exit { color: #ff8aa0; }
+
+.e3c-step,
+.e3c-gun-item,
+.e3c-exit-row {
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(12, 28, 23, 0.88);
+  border: 1px solid rgba(28, 62, 50, 0.65);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.e3c-step span {
+  display: block;
+  font-weight: 700;
+  color: #e2f5ee;
+  margin-bottom: 2px;
+}
+
+.e3c-step p {
+  margin: 0;
+  color: #8aaea1;
+}
+
+.e3c-guns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.egi-top {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 3px;
+}
+
+.egi-top strong {
+  color: #7dd3fc;
+}
+
+.egi-top span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: #e2f5ee;
+}
+
+.egi-desc {
+  color: #8aaea1;
+  font-size: 11px;
+}
+
+.eer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.eer-head strong {
+  color: #f8fafc;
+}
+
+.eer-head span {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #ffd400;
+}
+
+.eer-trig {
+  color: #cbd5e1;
+}
+
+.eer-act {
+  color: #8aaea1;
+}
+
+.btn-kline-jump {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid rgba(24, 201, 143, 0.45);
+  background: rgba(24, 201, 143, 0.14);
+  color: #6effd4;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-kline-jump:hover {
+  background: rgba(24, 201, 143, 0.25);
+}
+
+.btn-kline-jump.sm {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+/* 4. Portfolio Table */
+.etf-table-wrap {
+  overflow-x: auto;
+}
+
+.etf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.etf-table th {
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 11px;
+  color: #7ca094;
+  border-bottom: 1px solid rgba(28, 62, 50, 0.8);
+  white-space: nowrap;
+}
+
+.etf-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(28, 62, 50, 0.42);
+  vertical-align: top;
+}
+
+.etf-table tr.row-verdict-exclude {
+  opacity: 0.62;
+  background: rgba(255, 59, 92, 0.05);
+}
+
+.et-sym-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.et-sym-cell strong {
+  font-size: 13.5px;
+  color: #f8fafc;
+}
+
+.et-sym-cell small,
+.muted {
+  color: #7ca094;
+  font-size: 11px;
+}
+
+.et-layer-badge {
+  display: inline-block;
+  width: fit-content;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.et-layer-badge.l1 { background: rgba(0, 229, 163, 0.16); color: #6effd4; }
+.et-layer-badge.l2 { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; }
+.et-layer-badge.l3 { background: rgba(245, 196, 81, 0.18); color: #fde68a; }
+.et-layer-badge.l4 { background: rgba(232, 121, 249, 0.18); color: #f0abfc; }
+.et-layer-badge.l0 { background: rgba(255, 59, 92, 0.18); color: #ff8aa0; }
+
+.et-num-main {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.et-num-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #8aaea1;
+  margin-top: 2px;
+}
+
+.et-buy-shares {
+  font-family: var(--mono);
+  color: #ffd400;
+}
+
+.et-exclude-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(255, 59, 92, 0.18);
+  color: #ff8aa0;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.et-tax-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 260px;
+}
+
+.et-margin-tag {
+  display: inline-block;
+  width: fit-content;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.et-margin-tag.ok { background: rgba(0, 229, 163, 0.15); color: #6effd4; }
+.et-margin-tag.ban { background: rgba(255, 59, 92, 0.16); color: #ff8aa0; }
+
+/* 5. Bottom Ledger & Stress Test Grid */
+.etf-stress-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.etf-ledger-card h3 {
+  margin: 0 0 11px;
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+.elc-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elc-meter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: rgba(7, 17, 14, 0.88);
+  border: 1px solid rgba(28, 62, 50, 0.6);
+  font-size: 12px;
+  color: #cfe6de;
+}
+
+.elc-meter-row strong {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.elc-meter-row.total {
+  border-color: rgba(255, 212, 0, 0.45);
+  background: rgba(255, 212, 0, 0.08);
+}
+
+.elc-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: #8aaea1;
+  line-height: 1.5;
+}
+
+.etf-stress-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.etf-stress-table th {
+  text-align: left;
+  padding: 7px 8px;
+  font-size: 11px;
+  color: #7ca094;
+  border-bottom: 1px solid rgba(28, 62, 50, 0.75);
+}
+
+.etf-stress-table td {
+  padding: 8px;
+  border-bottom: 1px solid rgba(28, 62, 50, 0.4);
+  font-family: var(--mono);
+  color: #e2f5ee;
+}
+
+@media (max-width: 1200px) {
+  .etf-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .etf-bench-grid,
+  .etf-3x-grid,
+  .etf-stress-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .etf-plan-page {
+    padding: 12px 12px 86px;
+  }
+  .etf-kpi-grid,
+  .e3c-guns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.e3c-gun-item.triggered {
+  border-color: rgba(0, 229, 163, 0.6);
+  background: rgba(12, 42, 33, 0.86);
+}
+
+.egi-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.egi-trig-pill {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 229, 163, 0.18);
+  border: 1px solid rgba(0, 229, 163, 0.45);
+  color: #6effd4;
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
 }

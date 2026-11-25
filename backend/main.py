@@ -99,6 +99,7 @@ import html as _html
 from pathlib import Path as _Path
 from fastapi import Request as _Request, Response as _Response
 from calendar_engine import fetch_calendar_data as _fetch_calendar_data, get_symbol_earnings_warning as _get_earnings_warning
+from etf_plan_engine import fetch_etf_plan_data as _fetch_etf_plan_data
 
 
 @app.get("/api/radar")
@@ -109,6 +110,11 @@ async def radar_overview(force: int = Query(0, ge=0, le=1)):
 @app.get("/api/calendar")
 async def macro_earnings_calendar(force: int = Query(0, ge=0, le=1)):
     return await _fetch_calendar_data(force=bool(force))
+
+
+@app.get("/api/etf-plan")
+async def us_etf_plan(force: int = Query(0, ge=0, le=1)):
+    return await _fetch_etf_plan_data(force=bool(force))
 
 
 def _get_project_root() -> Path:
