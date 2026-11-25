@@ -533,6 +533,37 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       );
     }
 
+    // 1.6 Bull Market Support Band (牛熊20带: EMA20 + MA20/SMA20)
+    if (layers.bull_band && data.analysis.bull_band && data.analysis.bull_band.ema_line.length > 0) {
+      const emaBandSeries = mainChart.addSeries(LineSeries, {
+        color: '#ff6b8b',
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        crosshairMarkerVisible: true,
+      });
+      emaBandSeries.setData(
+        data.analysis.bull_band.ema_line.map((p) => ({
+          time: p.time as UTCTimestamp,
+          value: p.value,
+        }))
+      );
+
+      const smaBandSeries = mainChart.addSeries(LineSeries, {
+        color: '#00e5a3',
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        crosshairMarkerVisible: true,
+      });
+      smaBandSeries.setData(
+        data.analysis.bull_band.sma_line.map((p) => ({
+          time: p.time as UTCTimestamp,
+          value: p.value,
+        }))
+      );
+    }
+
     // 1.7 Institutional VWAP Line (天蓝色点线 #38bdf8)
     if (layers.vwap && data.analysis.vwap && data.analysis.vwap.line.length > 0) {
       const vwapSeries = mainChart.addSeries(LineSeries, {
@@ -983,6 +1014,41 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       ctx.fillText(text, drawX + padX, drawY + boxH / 2 + 0.5);
     };
 
+    // 0.4 牛熊20带 (EMA20 + MA20/SMA20 云带填充)
+    if (
+      layers.bull_band &&
+      data?.analysis.bull_band?.ema_line?.length &&
+      data.analysis.bull_band.sma_line?.length
+    ) {
+      const emaPts = data.analysis.bull_band.ema_line;
+      const smaPts = data.analysis.bull_band.sma_line;
+      const tsScale = mainChart.timeScale();
+      const len = Math.min(emaPts.length, smaPts.length);
+      for (let k = 1; k < len; k++) {
+        const x0 = tsScale.timeToCoordinate(emaPts[k - 1].time as UTCTimestamp);
+        const x1 = tsScale.timeToCoordinate(emaPts[k].time as UTCTimestamp);
+        if (x0 === null || x1 === null) continue;
+        const nx0 = Number(x0);
+        const nx1 = Number(x1);
+        if (nx1 < 0 || nx0 > cssW) continue;
+        const yE0 = series.priceToCoordinate(emaPts[k - 1].value);
+        const yE1 = series.priceToCoordinate(emaPts[k].value);
+        const yS0 = series.priceToCoordinate(smaPts[k - 1].value);
+        const yS1 = series.priceToCoordinate(smaPts[k].value);
+        if (yE0 === null || yE1 === null || yS0 === null || yS1 === null) continue;
+
+        const isBullCloud = emaPts[k].value >= smaPts[k].value;
+        ctx.fillStyle = isBullCloud ? 'rgba(255, 59, 92, 0.16)' : 'rgba(0, 229, 163, 0.15)';
+        ctx.beginPath();
+        ctx.moveTo(nx0, Number(yE0));
+        ctx.lineTo(nx1, Number(yE1));
+        ctx.lineTo(nx1, Number(yS1));
+        ctx.lineTo(nx0, Number(yS0));
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
     // 0.5 机构失衡缺口 (FVG Zones · 自动跟踪未回补区间)
     if (layers.fvg && data?.analysis.fvg_zones?.length) {
       const fvgRightEdge = layers.vpvr
@@ -1369,7 +1435,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         }
       }
     }
-  }, [data, layers.vpvr, layers.fvg, compact, rrTool, measurePts, lang]);
+  }, [data, layers.vpvr, layers.fvg, layers.bull_band, compact, rrTool, measurePts, lang]);
 
   // Schedule HUD Canvas redraws on zoom/pan/scale/data updates
   useEffect(() => {
@@ -1544,6 +1610,21 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             </span>
           </span>
         )}
+        {layers.bull_band && data?.analysis.bull_band && data.analysis.bull_band.ema_val > 0 && (
+          <span
+            className={`bull-band-readout ${
+              data.analysis.bull_band.state.startsWith('bull')
+                ? 'bull'
+                : data.analysis.bull_band.state === 'inside_band'
+                ? 'warn'
+                : 'bear'
+            }`}
+          >
+            🌈 {lang === 'zh' ? '牛熊20带' : '20 Band'}: EMA20 {fmtPrice(data.analysis.bull_band.ema_val)} / MA20{' '}
+            {fmtPrice(data.analysis.bull_band.sma_val)} ·{' '}
+            {lang === 'zh' ? data.analysis.bull_band.label_zh : data.analysis.bull_band.label_en}
+          </span>
+        )}
         {layers.vwap && data?.analysis.vwap && data.analysis.vwap.current > 0 && (
           <span className="ma-vwap">
             VWAP: {fmtPrice(data.analysis.vwap.current)} ({data.analysis.vwap.dist_pct >= 0 ? '+' : ''}
@@ -1615,7 +1696,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           </div>
         )}
 
-        {(layers.vpvr || layers.fvg || layers.absorption) && !compact && (
+        {(layers.vpvr || layers.fvg || layers.absorption || layers.bull_band) && !compact && (
           <div className={`vpvr-guide-card ${vpvrNoteCollapsed ? 'collapsed' : ''}`}>
             <button
               type="button"
@@ -1651,6 +1732,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
                 </div>
                 <div>
                   <b className="gold">🧲 扫损吸筹 / 🔨 诱多派发</b>：放量刺破前低/前高止损池后迅速收长影线拉回，往往代表主力承接吸筹或诱多砸盘。
+                </div>
+                <div>
+                  <b className="bull">🌈 牛熊20带 (EMA20 + MA20)</b>：红线 EMA20 + 青绿线 MA20 组成机构中期成本云带；周线价格站上双20带且同步向上拐头，常见主升牛市启动。
                 </div>
               </div>
             )}

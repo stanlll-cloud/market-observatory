@@ -118,6 +118,7 @@ export function App() {
     macro: true,
     plan: true,
     dual_ma: true,
+    bull_band: false,
     vwap: true,
     vpvr: true,
     fvg: true,
@@ -991,6 +992,14 @@ export function App() {
           switchViewMode('workbench');
           setDualChartMode((v) => !v);
         },
+      },
+      {
+        kind: 'action',
+        id: 'act:bull_band',
+        title: layers.bull_band ? '🌈 隐藏牛熊20带 (EMA20+MA20)' : '🌈 显示牛熊20带 (EMA20+MA20)',
+        sub: '周线/日线双20均线支撑云带（自动判断上方拐头向上）',
+        badge: '图层',
+        run: () => setLayers((p) => ({ ...p, bull_band: !p.bull_band })),
       },
       {
         kind: 'action',
@@ -2082,6 +2091,7 @@ export function App() {
               [
                 ['macro', lang === 'zh' ? '宏观指引' : 'Macro Guide'],
                 ['dual_ma', lang === 'zh' ? '双均线' : 'Dual MA'],
+                ['bull_band', lang === 'zh' ? '牛熊20带' : '20 Bull Band'],
                 ['vpvr', lang === 'zh' ? '筹码峰VPVR' : 'VPVR'],
                 ['fvg', lang === 'zh' ? '机构缺口FVG' : 'FVG Gaps'],
                 ['absorption', lang === 'zh' ? '主力吸筹' : 'Absorption'],
@@ -2116,25 +2126,44 @@ export function App() {
 
             <div className="ma-config-inline">
               <button
-                className={`ma-preset ${maConfig.type === 'ema' && maConfig.fast === 20 && maConfig.slow === 60 ? 'active' : ''}`}
-                onClick={() => setMaConfig({ type: 'ema', fast: 20, slow: 60 })}
+                className={`ma-preset ${!layers.bull_band && maConfig.type === 'ema' && maConfig.fast === 20 && maConfig.slow === 60 ? 'active' : ''}`}
+                onClick={() => {
+                  setMaConfig({ type: 'ema', fast: 20, slow: 60 });
+                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
+                }}
                 title="旗舰波段 EMA 20/60"
               >
                 20/60
               </button>
               <button
-                className={`ma-preset ${maConfig.type === 'ema' && maConfig.fast === 10 && maConfig.slow === 20 ? 'active' : ''}`}
-                onClick={() => setMaConfig({ type: 'ema', fast: 10, slow: 20 })}
+                className={`ma-preset ${!layers.bull_band && maConfig.type === 'ema' && maConfig.fast === 10 && maConfig.slow === 20 ? 'active' : ''}`}
+                onClick={() => {
+                  setMaConfig({ type: 'ema', fast: 10, slow: 20 });
+                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
+                }}
                 title="强势动量 EMA 10/20"
               >
                 10/20
               </button>
               <button
-                className={`ma-preset ${maConfig.type === 'sma' && maConfig.fast === 50 && maConfig.slow === 200 ? 'active' : ''}`}
-                onClick={() => setMaConfig({ type: 'sma', fast: 50, slow: 200 })}
-                title="指数牛熊 SMA 50/200"
+                className={`ma-preset ${!layers.bull_band && maConfig.type === 'sma' && maConfig.fast === 50 && maConfig.slow === 200 ? 'active' : ''}`}
+                onClick={() => {
+                  setMaConfig({ type: 'sma', fast: 50, slow: 200 });
+                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
+                }}
+                title="指数牛熊 MA(SMA) 50/200"
               >
                 50/200
+              </button>
+              <button
+                className={`ma-preset bull-band-preset ${interval === '1w' && layers.bull_band ? 'active' : ''}`}
+                onClick={() => {
+                  setIntervalVal('1w');
+                  setLayers((p) => ({ ...p, bull_band: true, dual_ma: false }));
+                }}
+                title="一键切周线叠加 EMA20 + MA20(SMA20) 牛市支撑带"
+              >
+                {lang === 'zh' ? '20W牛熊带' : '20W Band'}
               </button>
               <select
                 value={maConfig.type}
@@ -2143,7 +2172,7 @@ export function App() {
                 }
               >
                 <option value="ema">EMA</option>
-                <option value="sma">SMA</option>
+                <option value="sma">MA (SMA)</option>
               </select>
               <input
                 type="number"

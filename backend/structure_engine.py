@@ -184,6 +184,104 @@ def compute_dual_ma(
     }
 
 
+def compute_bull_band(
+    candles: List[Dict[str, Any]],
+    period: int = 20,
+) -> Dict[str, Any]:
+    """计算牛市支撑带 (EMA20 + MA20/SMA20 两条同周期均线及拐头方向)."""
+    if len(candles) < 5:
+        return {
+            "period": period,
+            "ema_line": [],
+            "sma_line": [],
+            "ema_val": 0.0,
+            "sma_val": 0.0,
+            "ema_rising": False,
+            "sma_rising": False,
+            "both_rising": False,
+            "both_falling": False,
+            "price_above": False,
+            "price_below": False,
+            "ema_above_sma": False,
+            "state": "neutral",
+            "label_zh": "数据不足",
+            "label_en": "Insufficient Data",
+        }
+
+    closes = [float(c["close"]) for c in candles]
+    p = max(2, period)
+    ema_vals = _ema(closes, p)
+    sma_vals = _sma(closes, p)
+
+    skip = min(p - 1, max(0, len(candles) - 1))
+    ema_line = [
+        {"time": candles[i]["time"], "value": round(ema_vals[i], 4)}
+        for i in range(skip, len(candles))
+    ]
+    sma_line = [
+        {"time": candles[i]["time"], "value": round(sma_vals[i], 4)}
+        for i in range(skip, len(candles))
+    ]
+
+    lookback = min(3, len(candles) - 1)
+    ema_last = ema_vals[-1]
+    sma_last = sma_vals[-1]
+    ema_rising = ema_last > ema_vals[-1 - lookback]
+    sma_rising = sma_last > sma_vals[-1 - lookback]
+    both_rising = ema_rising and sma_rising
+    both_falling = (ema_last < ema_vals[-1 - lookback]) and (sma_last < sma_vals[-1 - lookback])
+
+    last_close = closes[-1]
+    band_hi = max(ema_last, sma_last)
+    band_lo = min(ema_last, sma_last)
+    price_above = last_close > band_hi
+    price_below = last_close < band_lo
+    ema_above_sma = ema_last >= sma_last
+
+    if price_above and both_rising and ema_above_sma:
+        state = "bull_rising"
+        label_zh = "双20上方齐拐向上 · 牛市主升"
+        label_en = "Above 20 Band · Rising Bull"
+    elif price_above and both_rising:
+        state = "bull_rising"
+        label_zh = "站上双20带 · 拐头向上"
+        label_en = "Above 20 Band · Curling Up"
+    elif price_above:
+        state = "bull_watch"
+        label_zh = "价格在双20上方 · 观察拐头"
+        label_en = "Above 20 Band · Watch Slope"
+    elif not price_below:
+        state = "inside_band"
+        label_zh = "回踩测试双20支撑带"
+        label_en = "Testing 20 Support Band"
+    elif both_falling:
+        state = "bear_falling"
+        label_zh = "跌破双20且向下压制 · 弱势"
+        label_en = "Below 20 Band · Bearish"
+    else:
+        state = "bear_below"
+        label_zh = "位于双20带下方 · 观望"
+        label_en = "Below 20 Band"
+
+    return {
+        "period": p,
+        "ema_line": ema_line,
+        "sma_line": sma_line,
+        "ema_val": round(ema_last, 4),
+        "sma_val": round(sma_last, 4),
+        "ema_rising": ema_rising,
+        "sma_rising": sma_rising,
+        "both_rising": both_rising,
+        "both_falling": both_falling,
+        "price_above": price_above,
+        "price_below": price_below,
+        "ema_above_sma": ema_above_sma,
+        "state": state,
+        "label_zh": label_zh,
+        "label_en": label_en,
+    }
+
+
 def compute_fibonacci_confluence(
     candles: List[Dict[str, Any]],
     dual_ma: Dict[str, Any],
@@ -1295,6 +1393,7 @@ def analyze_structure(
             "absorption": [],
             "fvg_zones": [],
             "dual_ma": compute_dual_ma(candles, ma_type, ma_fast, ma_slow),
+            "bull_band": compute_bull_band(candles, 20),
             "vwap": compute_vwap(candles, interval),
             "buy_advice": None,
             "options_advice": None,
@@ -1388,6 +1487,7 @@ def analyze_structure(
         "fvg_zones": fvg_zones,
         "macd": macd,
         "dual_ma": dual_ma,
+        "bull_band": compute_bull_band(candles, 20),
         "vwap": vwap,
         "fibonacci": fibonacci,
         "regime": regime,

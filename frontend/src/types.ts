@@ -111,6 +111,24 @@ export interface DualMaData {
   trend_label_en: string;
 }
 
+export interface BullBandData {
+  period: number;
+  ema_line: { time: number; value: number }[];
+  sma_line: { time: number; value: number }[];
+  ema_val: number;
+  sma_val: number;
+  ema_rising: boolean;
+  sma_rising: boolean;
+  both_rising: boolean;
+  both_falling: boolean;
+  price_above: boolean;
+  price_below: boolean;
+  ema_above_sma: boolean;
+  state: 'bull_rising' | 'bull_watch' | 'inside_band' | 'bear_falling' | 'bear_below' | 'neutral';
+  label_zh: string;
+  label_en: string;
+}
+
 export interface BuyAdvice {
   action: 'BUY' | 'ACCUMULATE' | 'WAIT' | 'AVOID';
   action_zh: string;
@@ -222,6 +240,7 @@ export interface AnalysisData {
   absorption?: AbsorptionSignal[];
   fvg_zones?: FvgZone[];
   dual_ma?: DualMaData;
+  bull_band?: BullBandData;
   vwap?: VwapData | null;
   fibonacci?: FibonacciData | null;
   regime?: RegimeData | null;
@@ -590,6 +609,7 @@ export interface LayerToggles {
   macro: boolean;
   plan: boolean;
   dual_ma: boolean;
+  bull_band: boolean;
   vwap: boolean;
   vpvr: boolean;
   fvg: boolean;
