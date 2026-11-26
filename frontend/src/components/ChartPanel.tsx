@@ -234,9 +234,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     if (!mainContainerRef.current || !macdContainerRef.current) return;
 
     const commonLayout = {
-      background: { type: ColorType.Solid, color: '#07110e' },
-      textColor: '#7ca094',
-      fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
+      background: { type: ColorType.Solid, color: '#0b0e16' },
+      textColor: 'rgba(235, 240, 250, 0.58)',
+      fontFamily: "'SF Mono', 'JetBrains Mono', Menlo, monospace",
       fontSize: 11,
     };
 
@@ -267,20 +267,20 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         timeFormatter: fmtCrosshairTime,
       },
       grid: {
-        vertLines: { color: 'rgba(28, 62, 50, 0.28)' },
-        horzLines: { color: 'rgba(28, 62, 50, 0.28)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.045)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.045)' },
       },
       crosshair: {
-        vertLine: { color: 'rgba(24, 201, 143, 0.35)', width: 1, style: LineStyle.Dashed },
-        horzLine: { color: 'rgba(24, 201, 143, 0.35)', width: 1, style: LineStyle.Dashed },
+        vertLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
+        horzLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
       },
       rightPriceScale: {
-        borderColor: '#162f27',
+        borderColor: 'rgba(255, 255, 255, 0.09)',
         scaleMargins: { top: 0.08, bottom: 0.08 },
         autoScale: true,
       },
       timeScale: {
-        borderColor: '#162f27',
+        borderColor: 'rgba(255, 255, 255, 0.09)',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 16,
@@ -307,15 +307,15 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         timeFormatter: fmtCrosshairTime,
       },
       grid: {
-        vertLines: { color: 'rgba(28, 62, 50, 0.22)' },
-        horzLines: { color: 'rgba(28, 62, 50, 0.22)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.038)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.038)' },
       },
       rightPriceScale: {
-        borderColor: '#162f27',
+        borderColor: 'rgba(255, 255, 255, 0.09)',
         scaleMargins: { top: 0.12, bottom: 0.12 },
       },
       timeScale: {
-        borderColor: '#162f27',
+        borderColor: 'rgba(255, 255, 255, 0.09)',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 16,
