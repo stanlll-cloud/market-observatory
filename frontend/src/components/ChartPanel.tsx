@@ -15,9 +15,9 @@ import {
   type SeriesMarker,
   type Time,
 } from 'lightweight-charts';
+import { computeBollinger, computeSma } from '../utils/indicators';
 import type {
   AnalyzeResponse,
-  AnalysisData,
   Candle,
   LayerToggles,
   LangType,
@@ -76,6 +76,8 @@ interface ChartPanelProps {
   measurePts?: MeasurePoint[];
   onPickMeasurePoint?: (pt: MeasurePoint) => void;
   onClearMeasure?: () => void;
+  onToggleLayer?: (key: keyof LayerToggles) => void;
+  onOpenIndicators?: () => void;
 }
 
 /** Isolated 1s timer leaf so main K-line ChartPanel NEVER re-renders every second */
@@ -112,7 +114,7 @@ const fmtPrice = (v: number) => {
   return v.toFixed(4);
 };
 
-export const ChartPanel: React.FC<ChartPanelProps> = ({
+const ChartPanelInner: React.FC<ChartPanelProps> = ({
   data,
   interval,
   layers,
@@ -137,6 +139,8 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
   measurePts = [],
   onPickMeasurePoint,
   onClearMeasure,
+  onToggleLayer,
+  onOpenIndicators,
 }) => {
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const hudCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -175,12 +179,33 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
   });
 
   const prevChartKeyRef = useRef<string>('');
-  const prevAnalysisRef = useRef<AnalysisData | null>(null);
+  const prevStructSigRef = useRef<string>('');
   const prevLayersKeyRef = useRef<string>('');
   const prevPlanSideRef = useRef<string>('');
   const prevCompareRef = useRef<string>('');
 
-  // Re-sync container dimensions instantaneously on tab switch or dual-chart toggle
+  const ohlcTimeRef = useRef<HTMLSpanElement>(null);
+  const ohlcOpenRef = useRef<HTMLElement>(null);
+  const ohlcHighRef = useRef<HTMLElement>(null);
+  const ohlcLowRef = useRef<HTMLElement>(null);
+  const ohlcCloseRef = useRef<HTMLElement>(null);
+
+  const writeOhlcDom = useCallback(
+    (unixSec: number, bar: { open: number; high: number; low: number; close: number }) => {
+      if (ohlcTimeRef.current) {
+        ohlcTimeRef.current.textContent = new Date(unixSec * 1000).toLocaleString('zh-CN', {
+          hour12: false,
+        });
+      }
+      if (ohlcOpenRef.current) ohlcOpenRef.current.textContent = fmtPrice(bar.open);
+      if (ohlcHighRef.current) ohlcHighRef.current.textContent = fmtPrice(bar.high);
+      if (ohlcLowRef.current) ohlcLowRef.current.textContent = fmtPrice(bar.low);
+      if (ohlcCloseRef.current) ohlcCloseRef.current.textContent = fmtPrice(bar.close);
+    },
+    []
+  );
+
+  // Re-sync container dimensions instantaneously on tab switch, dual-chart toggle, or MACD visibility change
   useEffect(() => {
     if (!visible) return;
     const syncSize = () => {
@@ -216,19 +241,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       window.cancelAnimationFrame(raf1);
       window.clearTimeout(raf2);
     };
-  }, [visible, layoutKey]);
+  }, [visible, layoutKey, layers.macd]);
 
   const [planCollapsed, setPlanCollapsed] = useState<boolean>(
     () => typeof window !== 'undefined' && (window.innerWidth <= 960 || compact)
   );
-
-  const [hoverOhlc, setHoverOhlc] = useState<{
-    time: string;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-  } | null>(null);
 
   useEffect(() => {
     if (!mainContainerRef.current || !macdContainerRef.current) return;
@@ -326,6 +343,17 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     mainChartRef.current = mainChart;
     macdChartRef.current = macdChart;
 
+    // Single zero-allocation DOM crosshair listener (never triggers React state re-renders on hover)
+    mainChart.subscribeCrosshairMove((param) => {
+      if (!param.time || !candleSeriesRef.current) return;
+      const bar = param.seriesData.get(candleSeriesRef.current) as
+        | { open: number; high: number; low: number; close: number }
+        | undefined;
+      if (bar) {
+        writeOhlcDom(param.time as number, bar);
+      }
+    });
+
     mainChart.subscribeClick((param) => {
       if (!param?.point || !candleSeriesRef.current) return;
       const p = candleSeriesRef.current.coordinateToPrice(param.point.y);
@@ -415,12 +443,28 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     const layersKey = JSON.stringify(layers);
     const compareKey = layers.compare && compareCandles?.length ? `${compareSymbol}:${compareCandles.length}:${compareCandles[compareCandles.length - 1].close}` : '';
     const isSameChart = chartKey === prevChartKeyRef.current;
+    const planSig = activePlanSide === 'bull' ? data.analysis.plans?.bull_plan : data.analysis.plans?.bear_plan;
+    const structSig = [
+      data.candles.length,
+      data.candles[data.candles.length - 1]?.time ?? 0,
+      data.analysis.dual_ma?.ma_type ?? '',
+      data.analysis.dual_ma?.fast_period ?? 0,
+      data.analysis.dual_ma?.slow_period ?? 0,
+      data.analysis.dual_ma?.fast_line?.length ?? 0,
+      data.analysis.signals?.length ?? 0,
+      data.analysis.fvg_zones?.length ?? 0,
+      data.analysis.absorption?.length ?? 0,
+      planSig?.entry_low ?? 0,
+      planSig?.stop_loss ?? 0,
+      planSig?.t1 ?? 0,
+      planSig?.t2 ?? 0,
+    ].join(':');
 
-    // Fast path: live tick on same symbol/interval/layers/plan -> update last candle in place!
+    // Fast path: live tick OR silent 45s poll when structural signature didn't change -> update last candle in place!
     if (
       isSameChart &&
       candleSeriesRef.current &&
-      data.analysis === prevAnalysisRef.current &&
+      structSig === prevStructSigRef.current &&
       layersKey === prevLayersKeyRef.current &&
       activePlanSide === prevPlanSideRef.current &&
       compareKey === prevCompareRef.current
@@ -433,6 +477,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         low: lastC.low,
         close: lastC.close,
       });
+      writeOhlcDom(lastC.time, lastC);
       return;
     }
 
@@ -440,7 +485,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     const savedRange = isSameChart ? mainChart.timeScale().getVisibleLogicalRange() : null;
 
     prevChartKeyRef.current = chartKey;
-    prevAnalysisRef.current = data.analysis;
+    prevStructSigRef.current = structSig;
     prevLayersKeyRef.current = layersKey;
     prevPlanSideRef.current = activePlanSide;
     prevCompareRef.current = compareKey;
@@ -456,6 +501,26 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     alertLinesRef.current = [];
     clearChart(mainChart);
     clearChart(macdChart);
+
+    // 0.5 Volume Histogram in bottom 20% of main chart (zero obstruction to price action)
+    if (layers.volume) {
+      const volSeries = mainChart.addSeries(HistogramSeries, {
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'vol',
+        priceLineVisible: false,
+        lastValueVisible: false,
+      });
+      mainChart.priceScale('vol').applyOptions({
+        scaleMargins: { top: 0.80, bottom: 0 },
+      });
+      volSeries.setData(
+        data.candles.map((c) => ({
+          time: c.time as UTCTimestamp,
+          value: c.volume || 0,
+          color: c.close >= c.open ? 'rgba(217, 56, 41, 0.28)' : 'rgba(14, 143, 91, 0.28)',
+        }))
+      );
+    }
 
     // 1. Candlesticks (Neverless editorial: 涨=#D93829, 跌=#0E8F5B)
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
@@ -478,29 +543,66 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     candleSeries.setData(candleData);
 
     const lastC = data.candles[data.candles.length - 1];
-    setHoverOhlc({
-      time: new Date(lastC.time * 1000).toLocaleString('zh-CN', { hour12: false }),
-      open: lastC.open,
-      high: lastC.high,
-      low: lastC.low,
-      close: lastC.close,
-    });
+    writeOhlcDom(lastC.time, lastC);
 
-    mainChart.subscribeCrosshairMove((param) => {
-      if (!param.time) return;
-      const bar = param.seriesData.get(candleSeries) as
-        | { open: number; high: number; low: number; close: number }
-        | undefined;
-      if (bar) {
-        setHoverOhlc({
-          time: new Date((param.time as number) * 1000).toLocaleString('zh-CN', { hour12: false }),
-          open: bar.open,
-          high: bar.high,
-          low: bar.low,
-          close: bar.close,
+    // 1.4 Standard MA Library Lines (MA5 / 10 / 20 / 60 / 120 / 200 — 0ms instant client computation)
+    const stdMaDefs: Array<{ on: boolean; period: number; color: string; width: 1 | 2 }> = [
+      { on: layers.ma5, period: 5, color: '#2563EB', width: 1 },
+      { on: layers.ma10, period: 10, color: '#D97706', width: 1 },
+      { on: layers.ma20, period: 20, color: '#0D9488', width: 1 },
+      { on: layers.ma60, period: 60, color: '#9333EA', width: 2 },
+      { on: layers.ma120, period: 120, color: '#4F46E5', width: 2 },
+      { on: layers.ma200, period: 200, color: '#BE123C', width: 2 },
+    ];
+    for (const def of stdMaDefs) {
+      if (!def.on) continue;
+      const pts = computeSma(data.candles, def.period);
+      if (!pts.length) continue;
+      const s = mainChart.addSeries(LineSeries, {
+        color: def.color,
+        lineWidth: def.width,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        crosshairMarkerVisible: false,
+      });
+      s.setData(pts.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+    }
+
+    // 1.45 Bollinger Bands (20, 2)
+    if (layers.boll) {
+      const bb = computeBollinger(data.candles, 20, 2);
+      if (bb.upper.length) {
+        const bbUpper = mainChart.addSeries(LineSeries, {
+          color: '#0284C7',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
         });
+        bbUpper.setData(bb.upper.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+
+        const bbMid = mainChart.addSeries(LineSeries, {
+          color: 'rgba(2, 132, 199, 0.72)',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dotted,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        bbMid.setData(bb.mid.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
+
+        const bbLower = mainChart.addSeries(LineSeries, {
+          color: '#0284C7',
+          lineWidth: 1,
+          lineStyle: LineStyle.Dashed,
+          priceLineVisible: false,
+          lastValueVisible: false,
+          crosshairMarkerVisible: false,
+        });
+        bbLower.setData(bb.lower.map((p) => ({ time: p.time as UTCTimestamp, value: p.value })));
       }
-    });
+    }
 
     // 1.5 Dual Moving Average (高对比清晰：快线=黑曜墨 #141413, 慢线=爱马仕橙 #F05C00)
     if (layers.dual_ma && data.analysis.dual_ma && data.analysis.dual_ma.fast_line.length > 0) {
@@ -976,6 +1078,13 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     const cssH = container.clientHeight;
     if (cssW <= 20 || cssH <= 20) return;
 
+    const hasHudWork =
+      layers.bull_band ||
+      layers.fvg ||
+      layers.vpvr ||
+      Boolean(rrTool?.enabled && rrTool.entry > 0) ||
+      Boolean(measurePts && measurePts.length > 0);
+
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const targetW = Math.round(cssW * dpr);
     const targetH = Math.round(cssH * dpr);
@@ -988,6 +1097,8 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     if (!ctx) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssW, cssH);
+
+    if (!hasHudWork) return;
 
     const candles = data?.candles || [];
     if (!candles.length) return;
@@ -1455,10 +1566,13 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     }
 
     const onRange = () => scheduleDraw();
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.buttons !== 0) scheduleDraw();
+    };
     mainChart.timeScale().subscribeVisibleLogicalRangeChange(onRange);
     container.addEventListener('wheel', scheduleDraw, { passive: true });
     container.addEventListener('pointerup', scheduleDraw);
-    container.addEventListener('pointermove', scheduleDraw);
+    container.addEventListener('pointermove', onPointerMove, { passive: true });
 
     const ro = new ResizeObserver(scheduleDraw);
     ro.observe(container);
@@ -1472,7 +1586,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       }
       container.removeEventListener('wheel', scheduleDraw);
       container.removeEventListener('pointerup', scheduleDraw);
-      container.removeEventListener('pointermove', scheduleDraw);
+      container.removeEventListener('pointermove', onPointerMove);
       ro.disconnect();
     };
   }, [drawHud]);
@@ -1577,27 +1691,51 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
   const lastCandle = data?.candles.length ? data.candles[data.candles.length - 1] : null;
   const isCrosshairPick = pickAlertMode || !!rrTool?.pickField || measureMode || shiftHeld;
 
+  const activeChips: Array<{ key: keyof LayerToggles; label: string; color: string }> = [];
+  if (layers.dual_ma && data?.analysis.dual_ma) {
+    activeChips.push({
+      key: 'dual_ma',
+      label: `${data.analysis.dual_ma.ma_type.toUpperCase()} ${data.analysis.dual_ma.fast_period}/${data.analysis.dual_ma.slow_period}`,
+      color: '#F05C00',
+    });
+  }
+  if (layers.ma5) activeChips.push({ key: 'ma5', label: 'MA5', color: '#2563EB' });
+  if (layers.ma10) activeChips.push({ key: 'ma10', label: 'MA10', color: '#D97706' });
+  if (layers.ma20) activeChips.push({ key: 'ma20', label: 'MA20', color: '#0D9488' });
+  if (layers.ma60) activeChips.push({ key: 'ma60', label: 'MA60', color: '#9333EA' });
+  if (layers.ma120) activeChips.push({ key: 'ma120', label: 'MA120', color: '#4F46E5' });
+  if (layers.ma200) activeChips.push({ key: 'ma200', label: 'MA200', color: '#BE123C' });
+  if (layers.boll) activeChips.push({ key: 'boll', label: 'BOLL(20,2)', color: '#0284C7' });
+  if (layers.bull_band) activeChips.push({ key: 'bull_band', label: lang === 'zh' ? '牛熊20带' : '20 Band', color: '#D93829' });
+  if (layers.vwap) activeChips.push({ key: 'vwap', label: 'VWAP', color: '#1D4ED8' });
+  if (layers.volume) activeChips.push({ key: 'volume', label: lang === 'zh' ? '成交量' : 'Vol', color: '#0E8F5B' });
+  if (layers.vpvr) activeChips.push({ key: 'vpvr', label: 'VPVR', color: '#D95000' });
+  if (layers.fvg) activeChips.push({ key: 'fvg', label: 'FVG', color: '#B91C1C' });
+  if (layers.absorption) activeChips.push({ key: 'absorption', label: lang === 'zh' ? '吸筹扫损' : 'Absorb', color: '#D93829' });
+  if (layers.fib) activeChips.push({ key: 'fib', label: 'Fib', color: '#7E22CE' });
+  if (layers.compare) activeChips.push({ key: 'compare', label: `vs ${compareSymbol}`, color: '#7E22CE' });
+  if (layers.strokes) activeChips.push({ key: 'strokes', label: lang === 'zh' ? '笔' : 'Strokes', color: '#BE185D' });
+  if (layers.centers) activeChips.push({ key: 'centers', label: lang === 'zh' ? '中枢' : 'Centers', color: '#0E8F5B' });
+
   return (
     <div className={`chart-panel ${compact ? 'compact' : ''} ${isCrosshairPick ? 'pick-alert-cursor' : ''}`}>
-      {/* Top OHLC + Dual MA Readout */}
+      {/* Top OHLC + Dual MA Readout (Direct DOM refs — 0ms zero re-render crosshair scrub) */}
       <div className="ohlc-bar">
-        {hoverOhlc && (
-          <>
-            <span className="ohlc-time">{hoverOhlc.time}</span>
-            <span>
-              {lang === 'zh' ? '开' : 'O'} <b>{fmtPrice(hoverOhlc.open)}</b>
-            </span>
-            <span>
-              {lang === 'zh' ? '高' : 'H'} <b className="bull">{fmtPrice(hoverOhlc.high)}</b>
-            </span>
-            <span>
-              {lang === 'zh' ? '低' : 'L'} <b className="bear">{fmtPrice(hoverOhlc.low)}</b>
-            </span>
-            <span>
-              {lang === 'zh' ? '收' : 'C'} <b>{fmtPrice(hoverOhlc.close)}</b>
-            </span>
-          </>
-        )}
+        <span className="ohlc-time" ref={ohlcTimeRef}>
+          {lastCandle ? new Date(lastCandle.time * 1000).toLocaleString('zh-CN', { hour12: false }) : '--'}
+        </span>
+        <span>
+          {lang === 'zh' ? '开' : 'O'} <b ref={ohlcOpenRef}>{lastCandle ? fmtPrice(lastCandle.open) : '--'}</b>
+        </span>
+        <span>
+          {lang === 'zh' ? '高' : 'H'} <b className="bull" ref={ohlcHighRef}>{lastCandle ? fmtPrice(lastCandle.high) : '--'}</b>
+        </span>
+        <span>
+          {lang === 'zh' ? '低' : 'L'} <b className="bear" ref={ohlcLowRef}>{lastCandle ? fmtPrice(lastCandle.low) : '--'}</b>
+        </span>
+        <span>
+          {lang === 'zh' ? '收' : 'C'} <b ref={ohlcCloseRef}>{lastCandle ? fmtPrice(lastCandle.close) : '--'}</b>
+        </span>
         {layers.dual_ma && data?.analysis.dual_ma && (
           <span className="ma-readout">
             <span className="ma-fast">
@@ -1666,6 +1804,38 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           <div className="wm-sym">{data?.meta.symbol || 'BTCUSDT'}</div>
           <div className="wm-sub">MARKET OBSERVATORY</div>
         </div>
+
+        {/* IBKR / TradingView Floating Active Indicator Pills */}
+        {!compact && (onToggleLayer || onOpenIndicators) && (
+          <div className="chart-ind-pills">
+            {activeChips.map((ch) => (
+              <span key={ch.key} className="cip-chip">
+                <i className="cip-dot" style={{ background: ch.color }} />
+                <span>{ch.label}</span>
+                {onToggleLayer && (
+                  <button
+                    type="button"
+                    className="cip-x"
+                    onClick={() => onToggleLayer(ch.key)}
+                    title={lang === 'zh' ? `移除 ${ch.label}` : `Remove ${ch.label}`}
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ))}
+            {onOpenIndicators && (
+              <button
+                type="button"
+                className="cip-add"
+                onClick={onOpenIndicators}
+                title={lang === 'zh' ? '打开 fx 指标库' : 'Open Indicator Library'}
+              >
+                + fx {lang === 'zh' ? '指标' : 'Indicators'}
+              </button>
+            )}
+          </div>
+        )}
 
         <div ref={mainContainerRef} className="chart-canvas" />
         <canvas ref={hudCanvasRef} className="chart-hud-canvas" />
@@ -1870,10 +2040,24 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       )}
 
       {/* MACD Sub-chart */}
-      <div className="macd-wrap">
-        <div className="macd-label">MACD 12 / 26 / 9</div>
+      <div className="macd-wrap" style={{ display: layers.macd ? undefined : 'none' }}>
+        <div className="macd-label">
+          MACD 12 / 26 / 9
+          {onToggleLayer && (
+            <button
+              type="button"
+              className="macd-close-x"
+              onClick={() => onToggleLayer('macd')}
+              title={lang === 'zh' ? '隐藏 MACD 副图' : 'Hide MACD'}
+            >
+              ×
+            </button>
+          )}
+        </div>
         <div ref={macdContainerRef} className="macd-canvas" />
       </div>
     </div>
   );
 };
+
+export const ChartPanel = memo(ChartPanelInner);

@@ -320,7 +320,41 @@ body,
   border-radius: 999px !important;
   border-color: transparent !important;
   font-weight: 600;
-  transition: all 0.15s ease;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.toolbar-row {
+  flex-wrap: nowrap !important;
+  gap: 6px !important;
+  padding: 5px 10px !important;
+  overflow-x: auto;
+}
+
+.toolbar-row .tf-group {
+  flex-shrink: 0;
+  flex-wrap: nowrap !important;
+}
+
+.toolbar-row .tf-btn {
+  padding: 3px 7px !important;
+  font-size: 11px !important;
+}
+
+.toolbar-row .pro-tools-group {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  gap: 4px !important;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.toolbar-row .pro-tool-btn {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 .side-market-tabs button:hover,
@@ -651,7 +685,16 @@ body,
 
 /* ── Floating Popovers, Overlays & Modals ──────────────────────────────────── */
 .plan-overlay,
-.vpvr-guide-card,
+.vpvr-guide-card {
+  background: rgba(252, 249, 242, 0.97) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #CFC6B2 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px rgba(20, 20, 19, 0.10) !important;
+  color: #141413 !important;
+}
+
 .layers-popover,
 .alerts-drawer,
 .cmdk-card,
@@ -662,9 +705,9 @@ body,
 .rr-control-bar,
 .alert-toast,
 .chart-pick-alert-banner {
-  background: rgba(252, 249, 242, 0.96) !important;
-  backdrop-filter: blur(18px) !important;
-  -webkit-backdrop-filter: blur(18px) !important;
+  background: rgba(252, 249, 242, 0.98) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid #CFC6B2 !important;
   border-radius: 16px !important;
   box-shadow: 0 18px 44px rgba(20, 20, 19, 0.14) !important;
@@ -1244,6 +1287,442 @@ select:focus {
 .heatmap-sector-cnt {
   background: #EFE8D8 !important;
   color: #5F5C55 !important;
+}
+
+/* ── Unified fx Indicators Button, Floating Chips & Library Modal ────────── */
+.btn-fx-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #FCF9F2;
+  border: 1px solid #D8D1C3;
+  color: #141413;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.btn-fx-indicators:hover,
+.btn-fx-indicators.active {
+  background: #FFFFFF;
+  border-color: #141413;
+}
+
+.btn-fx-indicators.active {
+  background: #141413;
+  color: #F8F3E7;
+}
+
+.btn-fx-indicators .fx-icon {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 12px;
+  color: #F05C00;
+}
+
+.btn-fx-indicators.active .fx-icon {
+  color: #F79352;
+}
+
+.btn-fx-indicators .fx-count {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #EFE8D8;
+  color: #141413;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.btn-fx-indicators.active .fx-count {
+  background: #F05C00;
+  color: #FFFFFF;
+}
+
+/* IBKR / TradingView Floating Active Indicator Pills inside Chart */
+.chart-ind-pills {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 260px);
+  pointer-events: none;
+}
+
+.cip-chip,
+.cip-add {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(252, 249, 242, 0.90);
+  border: 1px solid #E5DEC9;
+  color: #141413;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.cip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cip-x {
+  background: transparent;
+  border: none;
+  color: #8E8A80;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 1px;
+}
+
+.cip-x:hover {
+  color: #D93829;
+}
+
+.cip-add {
+  cursor: pointer;
+  color: #5F5C55;
+  border-style: dashed;
+}
+
+.cip-add:hover {
+  color: #F05C00;
+  border-color: #F05C00;
+  background: #FFFFFF;
+}
+
+.macd-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.macd-close-x {
+  background: transparent;
+  border: none;
+  color: #8E8A80;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.macd-close-x:hover {
+  color: #D93829;
+}
+
+/* Indicator Library Modal (Neverless Editorial) */
+.ind-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(20, 20, 19, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ind-modal-card {
+  width: 100%;
+  max-width: 720px;
+  max-height: 84vh;
+  background: #FCF9F2;
+  border: 1px solid #CFC6B2;
+  border-radius: 20px;
+  box-shadow: 0 24px 64px rgba(20, 20, 19, 0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #141413;
+}
+
+.ind-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #E5DEC9;
+  background: #F8F3E7;
+}
+
+.ind-head-title {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.ind-fx-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #141413;
+  color: #F79352;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ind-head-title h3 {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #141413;
+  margin: 0;
+}
+
+.ind-head-title p {
+  font-size: 11.5px;
+  color: #5F5C55;
+  margin: 2px 0 0;
+}
+
+.ind-close-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid #D8D1C3;
+  background: #FFFFFF;
+  color: #141413;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ind-close-btn:hover {
+  border-color: #141413;
+}
+
+.ind-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 18px 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  border: 1px solid #D8D1C3;
+}
+
+.ind-search-ico {
+  color: #8E8A80;
+  flex-shrink: 0;
+}
+
+.ind-search-bar input {
+  flex: 1;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  font-size: 13px;
+  color: #141413 !important;
+}
+
+.ind-search-clear {
+  border: none;
+  background: transparent;
+  color: #8E8A80;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.ind-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 4px 18px 10px;
+  border-bottom: 1px solid #E5DEC9;
+}
+
+.ind-preset-lbl {
+  font-size: 11.5px;
+  color: #5F5C55;
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.ind-preset-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #D8D1C3;
+  background: #FFFFFF;
+  color: #141413;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ind-preset-btn:hover {
+  border-color: #F05C00;
+  color: #F05C00;
+}
+
+.ind-body-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ind-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8E8A80;
+  margin-bottom: 6px;
+}
+
+.ind-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ind-item-wrap {
+  border-radius: 12px;
+  border: 1px solid #E5DEC9;
+  background: #FFFFFF;
+  overflow: hidden;
+  transition: border-color 0.12s ease;
+}
+
+.ind-item-wrap.active {
+  border-color: #F05C00;
+  background: rgba(245, 233, 217, 0.42);
+}
+
+.ind-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: #141413;
+}
+
+.ind-row:hover {
+  background: rgba(239, 232, 216, 0.45);
+}
+
+.ind-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ind-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ind-row-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #141413;
+}
+
+.ind-row-desc {
+  font-size: 11px;
+  color: #5F5C55;
+  margin-top: 1px;
+}
+
+.ind-toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #D8D1C3;
+  background: #FCF9F2;
+  color: #5F5C55;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.ind-toggle-pill.on {
+  background: #141413;
+  border-color: #141413;
+  color: #F8F3E7;
+}
+
+.ind-ma-inline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 10px 31px;
+  border-top: 1px dashed #E5DEC9;
+  background: #FCF9F2;
+}
+
+.imi-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #5F5C55;
+  font-weight: 600;
+}
+
+.imi-preset {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid #D8D1C3;
+  background: #FFFFFF;
+  color: #141413;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.imi-preset.active {
+  border-color: #F05C00;
+  color: #F05C00;
+  background: rgba(240, 92, 0, 0.08);
+}
+
+.ind-ma-inline select,
+.ind-ma-inline input {
+  padding: 2px 6px !important;
+  font-size: 11px !important;
+  height: 24px;
+}
+
+.ind-ma-inline input {
+  width: 52px;
+  text-align: center;
 }
 
 /* Crisp Warm Scrollbars */

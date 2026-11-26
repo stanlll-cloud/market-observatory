@@ -609,6 +609,15 @@ export interface LayerToggles {
   macro: boolean;
   plan: boolean;
   dual_ma: boolean;
+  ma5: boolean;
+  ma10: boolean;
+  ma20: boolean;
+  ma60: boolean;
+  ma120: boolean;
+  ma200: boolean;
+  boll: boolean;
+  volume: boolean;
+  macd: boolean;
   bull_band: boolean;
   vwap: boolean;
   vpvr: boolean;

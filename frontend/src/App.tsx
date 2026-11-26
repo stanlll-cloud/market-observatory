@@ -11,6 +11,7 @@ import {
   Star,
 } from 'lucide-react';
 import { ChartPanel } from './components/ChartPanel';
+import { IndicatorModal, type IndicatorPreset } from './components/IndicatorModal';
 import { RadarPage } from './components/RadarPage';
 import { CalendarPage } from './components/CalendarPage';
 import { EtfPlanPage } from './components/EtfPlanPage';
@@ -118,10 +119,19 @@ export function App() {
   const loadingRef = useRef<boolean>(false);
   loadingRef.current = loading;
 
-  const [layers, setLayers] = useState<LayerToggles>({
+  const DEFAULT_LAYERS: LayerToggles = {
     macro: true,
     plan: true,
     dual_ma: true,
+    ma5: false,
+    ma10: false,
+    ma20: false,
+    ma60: false,
+    ma120: false,
+    ma200: false,
+    boll: false,
+    volume: true,
+    macd: true,
     bull_band: false,
     vwap: false,
     vpvr: false,
@@ -137,10 +147,150 @@ export function App() {
     signals: false,
     projection: false,
     fractals: false,
+  };
+
+  const [layers, setLayers] = useState<LayerToggles>(() => {
+    try {
+      const saved = localStorage.getItem('obs_chart_layers_v2');
+      if (saved) return { ...DEFAULT_LAYERS, ...JSON.parse(saved) };
+    } catch {
+      // ignore storage errors
+    }
+    return DEFAULT_LAYERS;
   });
+  useEffect(() => {
+    try {
+      localStorage.setItem('obs_chart_layers_v2', JSON.stringify(layers));
+    } catch {
+      // ignore storage errors
+    }
+  }, [layers]);
 
   const [rightTab, setRightTab] = useState<'trade' | 'structure' | 'news'>('trade');
-  const [layersMenuOpen, setLayersMenuOpen] = useState<boolean>(false);
+  const [indicatorModalOpen, setIndicatorModalOpen] = useState<boolean>(false);
+
+  const toggleLayer = useCallback((key: keyof LayerToggles) => {
+    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const openIndicatorsModal = useCallback(() => {
+    setIndicatorModalOpen(true);
+  }, []);
+
+  const applyIndicatorPreset = useCallback((preset: IndicatorPreset) => {
+    if (preset === 'clean') {
+      setLayers((p) => ({
+        ...p,
+        macro: true,
+        plan: true,
+        dual_ma: true,
+        ma5: false,
+        ma10: false,
+        ma20: false,
+        ma60: false,
+        ma120: false,
+        ma200: false,
+        boll: false,
+        volume: true,
+        macd: true,
+        bull_band: false,
+        deduct: true,
+        regime: true,
+        vwap: false,
+        vpvr: false,
+        fvg: false,
+        absorption: false,
+        fib: false,
+        strokes: false,
+        segments: false,
+        centers: false,
+        signals: false,
+        projection: false,
+        fractals: false,
+      }));
+    } else if (preset === 'bull20w') {
+      setIntervalVal('1w');
+      setLayers((p) => ({
+        ...p,
+        macro: true,
+        regime: true,
+        bull_band: true,
+        dual_ma: false,
+        volume: true,
+        macd: true,
+        vpvr: false,
+        fvg: false,
+        absorption: false,
+        strokes: false,
+        segments: false,
+        centers: false,
+        signals: false,
+        projection: false,
+      }));
+    } else if (preset === 'smart_money') {
+      setLayers((p) => ({
+        ...p,
+        macro: true,
+        dual_ma: true,
+        bull_band: false,
+        volume: true,
+        macd: true,
+        vpvr: true,
+        fvg: true,
+        absorption: true,
+        vwap: true,
+        plan: true,
+        strokes: false,
+        segments: false,
+        centers: false,
+      }));
+    } else if (preset === 'chanlun') {
+      setLayers((p) => ({
+        ...p,
+        macro: true,
+        dual_ma: true,
+        bull_band: false,
+        volume: true,
+        macd: true,
+        strokes: true,
+        segments: true,
+        centers: true,
+        signals: true,
+        projection: true,
+        fib: true,
+      }));
+    } else if (preset === 'naked') {
+      setLayers((p) => ({
+        ...p,
+        dual_ma: false,
+        ma5: false,
+        ma10: false,
+        ma20: false,
+        ma60: false,
+        ma120: false,
+        ma200: false,
+        boll: false,
+        volume: true,
+        macd: false,
+        bull_band: false,
+        vwap: false,
+        vpvr: false,
+        fvg: false,
+        absorption: false,
+        deduct: false,
+        compare: false,
+        fib: false,
+        regime: false,
+        plan: false,
+        strokes: false,
+        segments: false,
+        centers: false,
+        signals: false,
+        projection: false,
+        fractals: false,
+      }));
+    }
+  }, []);
 
   // Dual MA Config (persisted in localStorage)
   const [maConfig, setMaConfig] = useState<{ type: 'ema' | 'sma'; fast: number; slow: number }>(() => {
@@ -788,7 +938,8 @@ export function App() {
         const tick = await res.json();
         if (tick.error || !tick.price) return;
         checkPriceAlerts(market, symbol, Number(tick.price));
-        setLastUpdated(new Date().toLocaleTimeString('zh-CN', { hour12: false }));
+        const tsStr = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+        setLastUpdated((prev) => (prev === tsStr ? prev : tsStr));
         setData((prev) => {
           if (
             !prev ||
@@ -838,11 +989,11 @@ export function App() {
 
     const fullId = window.setInterval(() => {
       loadAnalysis(market, symbol, interval, -1, maConfig, true);
-    }, 15000);
+    }, 45000);
 
     const macroId = window.setInterval(() => {
       loadMacro(market, symbol);
-    }, 25000);
+    }, 45000);
 
     return () => {
       window.clearInterval(tickId);
@@ -1291,7 +1442,7 @@ export function App() {
       if (e.key === 'Escape') {
         if (cmdKOpen) setCmdKOpen(false);
         if (displayMenuOpen) setDisplayMenuOpen(false);
-        if (layersMenuOpen) setLayersMenuOpen(false);
+        if (indicatorModalOpen) setIndicatorModalOpen(false);
         if (alertsOpen) setAlertsOpen(false);
         setPickAlertMode(false);
         setMeasureMode(false);
@@ -1997,6 +2148,19 @@ export function App() {
               ))}
             </div>
 
+            <button
+              type="button"
+              className={`btn-fx-indicators ${indicatorModalOpen ? 'active' : ''}`}
+              onClick={openIndicatorsModal}
+              title={lang === 'zh' ? '统一管理均线(MA5~200)、布林带、成交量、VPVR、缠论等全部指标' : 'Indicators Library'}
+            >
+              <span className="fx-icon">fx</span>
+              <span>{lang === 'zh' ? '指标' : 'Indicators'}</span>
+              <span className="fx-count">
+                {Object.values(layers).filter(Boolean).length}
+              </span>
+            </button>
+
             <div className="pro-tools-group">
               <button
                 type="button"
@@ -2579,292 +2743,7 @@ export function App() {
             );
           })()}
 
-          {/* Clean Single-Row Scene Presets + Layer Popover + Dual MA Config */}
-          <div className="layers-row scene-preset-bar">
-            <div className="scene-presets-left">
-              <button
-                type="button"
-                className={`scene-btn ${
-                  layers.dual_ma && !layers.bull_band && !layers.vpvr && !layers.strokes ? 'active' : ''
-                }`}
-                onClick={() =>
-                  setLayers((p) => ({
-                    ...p,
-                    macro: true,
-                    plan: true,
-                    dual_ma: true,
-                    bull_band: false,
-                    deduct: true,
-                    regime: true,
-                    vwap: false,
-                    vpvr: false,
-                    fvg: false,
-                    absorption: false,
-                    fib: false,
-                    strokes: false,
-                    segments: false,
-                    centers: false,
-                    signals: false,
-                    projection: false,
-                    fractals: false,
-                  }))
-                }
-                title="只保留均线、扣抵与交易计划，画面最干净"
-              >
-                {lang === 'zh' ? '简洁趋势' : 'Clean Trend'}
-              </button>
-              <button
-                type="button"
-                className={`scene-btn ${interval === '1w' && layers.bull_band ? 'active' : ''}`}
-                onClick={() => {
-                  setIntervalVal('1w');
-                  setLayers((p) => ({
-                    ...p,
-                    macro: true,
-                    regime: true,
-                    bull_band: true,
-                    dual_ma: false,
-                    vpvr: false,
-                    fvg: false,
-                    absorption: false,
-                    strokes: false,
-                    segments: false,
-                    centers: false,
-                    signals: false,
-                    projection: false,
-                  }));
-                }}
-                title="一键切周线看 EMA20 + MA20 牛市支撑带"
-              >
-                {lang === 'zh' ? '20W牛熊带' : '20W Band'}
-              </button>
-              <button
-                type="button"
-                className={`scene-btn ${layers.vpvr && layers.fvg && layers.absorption ? 'active' : ''}`}
-                onClick={() =>
-                  setLayers((p) => ({
-                    ...p,
-                    macro: true,
-                    dual_ma: true,
-                    bull_band: false,
-                    vpvr: true,
-                    fvg: true,
-                    absorption: true,
-                    vwap: true,
-                    plan: true,
-                    strokes: false,
-                    segments: false,
-                    centers: false,
-                  }))
-                }
-                title="叠加筹码峰VPVR + 机构缺口FVG + 主力扫损吸筹"
-              >
-                {lang === 'zh' ? '机构筹码' : 'Smart Money'}
-              </button>
-              <button
-                type="button"
-                className={`scene-btn ${layers.strokes && layers.centers && layers.signals ? 'active' : ''}`}
-                onClick={() =>
-                  setLayers((p) => ({
-                    ...p,
-                    macro: true,
-                    dual_ma: true,
-                    bull_band: false,
-                    strokes: true,
-                    segments: true,
-                    centers: true,
-                    signals: true,
-                    projection: true,
-                    fib: true,
-                  }))
-                }
-                title="开启缠论笔段中枢 + 背驰三买卖 + 斐波那契"
-              >
-                {lang === 'zh' ? '缠论全量' : 'Full ChanLun'}
-              </button>
-
-              <div className="layers-menu-wrap">
-                <button
-                  type="button"
-                  className={`layers-popover-btn ${layersMenuOpen ? 'open' : ''}`}
-                  onClick={() => setLayersMenuOpen((v) => !v)}
-                >
-                  {lang === 'zh' ? '图层' : 'Layers'} (
-                  {Object.values(layers).filter(Boolean).length}/18) {layersMenuOpen ? '▴' : '▾'}
-                </button>
-                {layersMenuOpen && (
-                  <div className="layers-popover">
-                    <div className="lp-head">
-                      <span>{lang === 'zh' ? '自定义盘面叠加图层' : 'Custom Chart Layers'}</span>
-                      <div className="lp-actions">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setLayers({
-                              macro: true,
-                              plan: true,
-                              dual_ma: true,
-                              bull_band: false,
-                              vwap: false,
-                              vpvr: false,
-                              fvg: false,
-                              absorption: false,
-                              deduct: true,
-                              compare: false,
-                              fib: false,
-                              regime: true,
-                              strokes: false,
-                              segments: false,
-                              centers: false,
-                              signals: false,
-                              projection: false,
-                              fractals: false,
-                            })
-                          }
-                        >
-                          {lang === 'zh' ? '恢复简洁' : 'Clean'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setLayers((p) => ({
-                              ...p,
-                              dual_ma: false,
-                              bull_band: false,
-                              vwap: false,
-                              vpvr: false,
-                              fvg: false,
-                              absorption: false,
-                              deduct: false,
-                              compare: false,
-                              fib: false,
-                              regime: false,
-                              plan: false,
-                              strokes: false,
-                              segments: false,
-                              centers: false,
-                              signals: false,
-                              projection: false,
-                              fractals: false,
-                            }))
-                          }
-                        >
-                          {lang === 'zh' ? '仅看裸K' : 'Naked'}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="lp-grid">
-                      {(
-                        [
-                          ['macro', lang === 'zh' ? '宏观指引' : 'Macro Guide'],
-                          ['dual_ma', lang === 'zh' ? '双均线' : 'Dual MA'],
-                          ['bull_band', lang === 'zh' ? '牛熊20带' : '20 Bull Band'],
-                          ['vpvr', lang === 'zh' ? '筹码峰VPVR' : 'VPVR'],
-                          ['fvg', lang === 'zh' ? '机构缺口FVG' : 'FVG Gaps'],
-                          ['absorption', lang === 'zh' ? '主力吸筹' : 'Absorption'],
-                          ['deduct', lang === 'zh' ? '均线扣抵' : 'Deduct'],
-                          ['compare', lang === 'zh' ? `对比${compareTarget.sym.replace('USDT', '')}` : `vs ${compareTarget.sym}`],
-                          ['vwap', lang === 'zh' ? '机构VWAP' : 'VWAP'],
-                          ['fib', lang === 'zh' ? '斐波那契' : 'Fibonacci'],
-                          ['regime', lang === 'zh' ? '震荡预警' : 'Regime Alert'],
-                          ['plan', lang === 'zh' ? '交易计划' : 'Trade Plan'],
-                          ['strokes', lang === 'zh' ? '笔' : 'Strokes'],
-                          ['segments', lang === 'zh' ? '线段' : 'Segments'],
-                          ['centers', lang === 'zh' ? '中枢' : 'Centers'],
-                          ['signals', lang === 'zh' ? '历史信号' : 'Signals'],
-                          ['projection', lang === 'zh' ? '条件路径' : 'Projection'],
-                          ['fractals', lang === 'zh' ? '分型' : 'Fractals'],
-                        ] as [keyof LayerToggles, string][]
-                      ).map(([key, label]) => (
-                        <label
-                          key={key}
-                          className={`layer-chip ${layers[key] ? 'checked' : ''}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={layers[key]}
-                            onChange={() =>
-                              setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
-                            }
-                          />
-                          <span>{label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="ma-config-inline">
-              <button
-                className={`ma-preset ${!layers.bull_band && maConfig.type === 'ema' && maConfig.fast === 20 && maConfig.slow === 60 ? 'active' : ''}`}
-                onClick={() => {
-                  setMaConfig({ type: 'ema', fast: 20, slow: 60 });
-                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
-                }}
-                title="旗舰波段 EMA 20/60"
-              >
-                20/60
-              </button>
-              <button
-                className={`ma-preset ${!layers.bull_band && maConfig.type === 'ema' && maConfig.fast === 10 && maConfig.slow === 20 ? 'active' : ''}`}
-                onClick={() => {
-                  setMaConfig({ type: 'ema', fast: 10, slow: 20 });
-                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
-                }}
-                title="强势动量 EMA 10/20"
-              >
-                10/20
-              </button>
-              <button
-                className={`ma-preset ${!layers.bull_band && maConfig.type === 'sma' && maConfig.fast === 50 && maConfig.slow === 200 ? 'active' : ''}`}
-                onClick={() => {
-                  setMaConfig({ type: 'sma', fast: 50, slow: 200 });
-                  setLayers((p) => ({ ...p, dual_ma: true, bull_band: false }));
-                }}
-                title="指数牛熊 MA(SMA) 50/200"
-              >
-                50/200
-              </button>
-              <select
-                value={maConfig.type}
-                onChange={(e) =>
-                  setMaConfig((p) => ({ ...p, type: e.target.value as 'ema' | 'sma' }))
-                }
-              >
-                <option value="ema">EMA</option>
-                <option value="sma">MA (SMA)</option>
-              </select>
-              <input
-                type="number"
-                min={2}
-                max={200}
-                value={maConfig.fast}
-                onChange={(e) =>
-                  setMaConfig((p) => ({
-                    ...p,
-                    fast: Math.max(2, Math.min(200, Number(e.target.value) || 20)),
-                  }))
-                }
-                title={lang === 'zh' ? '快线周期' : 'Fast Period'}
-              />
-              <span>/</span>
-              <input
-                type="number"
-                min={3}
-                max={400}
-                value={maConfig.slow}
-                onChange={(e) =>
-                  setMaConfig((p) => ({
-                    ...p,
-                    slow: Math.max(3, Math.min(400, Number(e.target.value) || 60)),
-                  }))
-                }
-                title={lang === 'zh' ? '慢线周期' : 'Slow Period'}
-              />
-            </div>
-          </div>
+          {/* 全部指标图层、双均线参数与常用组合均已整合至顶部工具栏「fx 指标」库 */}
 
           {errorMsg && <div className="error-banner">{errorMsg}</div>}
 
@@ -3045,6 +2924,8 @@ export function App() {
                   setMeasurePts([]);
                   setMeasureMode(false);
                 }}
+                onToggleLayer={toggleLayer}
+                onOpenIndicators={openIndicatorsModal}
               />
             )}
             {dualChartMode && (
@@ -4046,6 +3927,18 @@ export function App() {
           </div>
         </div>
       )}
+
+      <IndicatorModal
+        open={indicatorModalOpen}
+        onClose={() => setIndicatorModalOpen(false)}
+        lang={lang}
+        layers={layers}
+        onToggleLayer={toggleLayer}
+        onApplyPreset={applyIndicatorPreset}
+        maConfig={maConfig}
+        onChangeMaConfig={setMaConfig}
+        compareSymbol={compareTarget.sym}
+      />
     </div>
   );
 }
