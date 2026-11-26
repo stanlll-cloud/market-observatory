@@ -234,8 +234,8 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     if (!mainContainerRef.current || !macdContainerRef.current) return;
 
     const commonLayout = {
-      background: { type: ColorType.Solid, color: '#0b0e16' },
-      textColor: 'rgba(235, 240, 250, 0.58)',
+      background: { type: ColorType.Solid, color: '#FCF9F2' },
+      textColor: '#5F5C55',
       fontFamily: "'SF Mono', 'JetBrains Mono', Menlo, monospace",
       fontSize: 11,
     };
@@ -267,20 +267,20 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         timeFormatter: fmtCrosshairTime,
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.045)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.045)' },
+        vertLines: { color: 'rgba(28, 28, 30, 0.055)' },
+        horzLines: { color: 'rgba(28, 28, 30, 0.055)' },
       },
       crosshair: {
-        vertLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
-        horzLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
+        vertLine: { color: 'rgba(240, 92, 0, 0.45)', width: 1, style: LineStyle.Dashed },
+        horzLine: { color: 'rgba(240, 92, 0, 0.45)', width: 1, style: LineStyle.Dashed },
       },
       rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         scaleMargins: { top: 0.08, bottom: 0.08 },
         autoScale: true,
       },
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 16,
@@ -307,15 +307,15 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         timeFormatter: fmtCrosshairTime,
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.038)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.038)' },
+        vertLines: { color: 'rgba(28, 28, 30, 0.045)' },
+        horzLines: { color: 'rgba(28, 28, 30, 0.045)' },
       },
       rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         scaleMargins: { top: 0.12, bottom: 0.12 },
       },
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         timeVisible: true,
         secondsVisible: false,
         rightOffset: 16,
@@ -457,14 +457,14 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     clearChart(mainChart);
     clearChart(macdChart);
 
-    // 1. Candlesticks (红涨绿跌高分离度：涨=亮朱红 #ff3b5c, 跌=亮青绿 #00e5a3)
+    // 1. Candlesticks (Neverless editorial: 涨=#D93829, 跌=#0E8F5B)
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: '#ff3b5c',
-      downColor: '#00e5a3',
-      borderUpColor: '#ff3b5c',
-      borderDownColor: '#00e5a3',
-      wickUpColor: '#ff3b5c',
-      wickDownColor: '#00e5a3',
+      upColor: '#D93829',
+      downColor: '#0E8F5B',
+      borderUpColor: '#D93829',
+      borderDownColor: '#0E8F5B',
+      wickUpColor: '#D93829',
+      wickDownColor: '#0E8F5B',
     });
     candleSeriesRef.current = candleSeries;
 
@@ -502,11 +502,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       }
     });
 
-    // 1.5 Dual Moving Average (高对比加粗：快线=纯白3px, 慢线=亮金黄3px)
+    // 1.5 Dual Moving Average (高对比清晰：快线=黑曜墨 #141413, 慢线=爱马仕橙 #F05C00)
     if (layers.dual_ma && data.analysis.dual_ma && data.analysis.dual_ma.fast_line.length > 0) {
       const fastSeries = mainChart.addSeries(LineSeries, {
-        color: '#ffffff',
-        lineWidth: 3,
+        color: '#141413',
+        lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
         crosshairMarkerVisible: true,
@@ -519,8 +519,8 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       );
 
       const slowSeries = mainChart.addSeries(LineSeries, {
-        color: '#ffd400',
-        lineWidth: 3,
+        color: '#F05C00',
+        lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
         crosshairMarkerVisible: true,
@@ -536,7 +536,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
     // 1.6 Bull Market Support Band (牛熊20带: EMA20 + MA20/SMA20)
     if (layers.bull_band && data.analysis.bull_band && data.analysis.bull_band.ema_line.length > 0) {
       const emaBandSeries = mainChart.addSeries(LineSeries, {
-        color: '#ff6b8b',
+        color: '#D93829',
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
@@ -550,7 +550,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       );
 
       const smaBandSeries = mainChart.addSeries(LineSeries, {
-        color: '#00e5a3',
+        color: '#0E8F5B',
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
@@ -564,10 +564,10 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       );
     }
 
-    // 1.7 Institutional VWAP Line (天蓝色点线 #38bdf8)
+    // 1.7 Institutional VWAP Line (#1D4ED8)
     if (layers.vwap && data.analysis.vwap && data.analysis.vwap.line.length > 0) {
       const vwapSeries = mainChart.addSeries(LineSeries, {
-        color: '#38bdf8',
+        color: '#1D4ED8',
         lineWidth: 2,
         lineStyle: LineStyle.Dotted,
         priceLineVisible: false,
@@ -612,7 +612,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
 
       if (rebasedPts.length >= 2) {
         const cmpSeries = mainChart.addSeries(LineSeries, {
-          color: '#a78bfa',
+          color: '#7E22CE',
           lineWidth: 2,
           lineStyle: LineStyle.Dashed,
           priceLineVisible: false,
@@ -624,10 +624,10 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       }
     }
 
-    // 2. Strokes (笔: 亮品红细线，与均线彻底区分)
+    // 2. Strokes (笔: 紫红细线，与均线彻底区分)
     if (layers.strokes && data.analysis.strokes.length > 0) {
       const strokeSeries = mainChart.addSeries(LineSeries, {
-        color: '#ff5ca8',
+        color: '#BE185D',
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -714,7 +714,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         const isGolden = lv.ratio === '0.618';
         candleSeries.createPriceLine({
           price: lv.price,
-          color: isGolden ? '#c084fc' : 'rgba(148, 163, 184, 0.55)',
+          color: isGolden ? '#7E22CE' : 'rgba(95, 92, 85, 0.50)',
           lineWidth: 1,
           lineStyle: isGolden ? LineStyle.Dashed : LineStyle.Dotted,
           axisLabelVisible: true,
@@ -730,7 +730,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: f.time as UTCTimestamp,
           position: f.type === 'top' ? 'aboveBar' : 'belowBar',
-          color: f.type === 'top' ? '#00e5a3' : '#ff3b5c',
+          color: f.type === 'top' ? '#0E8F5B' : '#D93829',
           shape: f.type === 'top' ? 'arrowDown' : 'arrowUp',
           size: 0.6,
         });
@@ -741,7 +741,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: sig.time as UTCTimestamp,
           position: sig.type === 'top_div' ? 'aboveBar' : 'belowBar',
-          color: sig.type === 'top_div' ? '#fb7185' : '#34d399',
+          color: sig.type === 'top_div' ? '#D93829' : '#0E8F5B',
           shape: 'circle',
           text: sig.label,
           size: 1.2,
@@ -753,7 +753,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cr.time as UTCTimestamp,
           position: cr.type === 'golden' ? 'belowBar' : 'aboveBar',
-          color: cr.type === 'golden' ? '#00b4ff' : '#ffd400',
+          color: cr.type === 'golden' ? '#1D4ED8' : '#B45309',
           shape: cr.type === 'golden' ? 'arrowUp' : 'arrowDown',
           text: cr.label,
           size: 1.2,
@@ -765,7 +765,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: rm.time as UTCTimestamp,
           position: 'aboveBar',
-          color: '#ffd400',
+          color: '#B45309',
           shape: 'square',
           text: rm.label,
           size: 0.9,
@@ -779,7 +779,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: ab.time as UTCTimestamp,
           position: isBull ? 'belowBar' : 'aboveBar',
-          color: isBull ? '#ff3b5c' : '#00e5a3',
+          color: isBull ? '#D93829' : '#0E8F5B',
           shape: isBull ? 'arrowUp' : 'arrowDown',
           text: lang === 'zh' ? ab.label : ab.label_en,
           size: ab.grade === 'A' ? 1.15 : 0.95,
@@ -798,9 +798,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cF.time as UTCTimestamp,
           position: 'aboveBar',
-          color: '#ffffff',
+          color: '#141413',
           shape: 'arrowDown',
-          text: `📍${fastP}扣(${isLow ? '低' : '高'})`,
+          text: `${fastP}扣(${isLow ? '低' : '高'})`,
           size: 1.0,
         });
       }
@@ -811,9 +811,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cS.time as UTCTimestamp,
           position: 'belowBar',
-          color: '#ffd400',
+          color: '#F05C00',
           shape: 'arrowUp',
-          text: `📍${slowP}扣(${isLowS ? '低' : '高'})`,
+          text: `${slowP}扣(${isLowS ? '低' : '高'})`,
           size: 1.0,
         });
       }
@@ -831,7 +831,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       const isBull = activePlanSide === 'bull';
       candleSeries.createPriceLine({
         price: activePlan.t2,
-        color: '#00b4ff',
+        color: '#0E8F5B',
         lineWidth: 1,
         lineStyle: LineStyle.Dotted,
         axisLabelVisible: true,
@@ -839,7 +839,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       });
       candleSeries.createPriceLine({
         price: activePlan.t1,
-        color: '#38bdf8',
+        color: '#1D4ED8',
         lineWidth: 1,
         lineStyle: LineStyle.Dotted,
         axisLabelVisible: true,
@@ -847,7 +847,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       });
       candleSeries.createPriceLine({
         price: (activePlan.entry_low + activePlan.entry_high) / 2,
-        color: '#ffffff',
+        color: '#141413',
         lineWidth: 1,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
@@ -855,7 +855,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       });
       candleSeries.createPriceLine({
         price: activePlan.stop_loss,
-        color: '#ff6b2b',
+        color: '#D93829',
         lineWidth: 1,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
@@ -865,7 +865,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
 
     if (layers.projection && activePlan) {
       const p1 = mainChart.addSeries(LineSeries, {
-        color: '#18c98f',
+        color: '#0E8F5B',
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
         priceLineVisible: false,
@@ -879,7 +879,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       );
 
       const p2 = mainChart.addSeries(LineSeries, {
-        color: '#f45b69',
+        color: '#D93829',
         lineWidth: 1,
         lineStyle: LineStyle.Dotted,
         priceLineVisible: false,
@@ -903,12 +903,12 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         data.macd.map((m) => ({
           time: m.time as UTCTimestamp,
           value: m.hist,
-          color: m.hist >= 0 ? 'rgba(255, 59, 92, 0.68)' : 'rgba(0, 229, 163, 0.68)',
+          color: m.hist >= 0 ? 'rgba(217, 56, 41, 0.68)' : 'rgba(14, 143, 91, 0.68)',
         }))
       );
 
       const difSeries = macdChart.addSeries(LineSeries, {
-        color: '#e6f2ee',
+        color: '#141413',
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -916,7 +916,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       difSeries.setData(data.macd.map((m) => ({ time: m.time as UTCTimestamp, value: m.dif })));
 
       const deaSeries = macdChart.addSeries(LineSeries, {
-        color: '#f5b041',
+        color: '#F05C00',
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
@@ -1038,7 +1038,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         if (yE0 === null || yE1 === null || yS0 === null || yS1 === null) continue;
 
         const isBullCloud = emaPts[k].value >= smaPts[k].value;
-        ctx.fillStyle = isBullCloud ? 'rgba(255, 59, 92, 0.16)' : 'rgba(0, 229, 163, 0.15)';
+        ctx.fillStyle = isBullCloud ? 'rgba(217, 56, 41, 0.11)' : 'rgba(14, 143, 91, 0.11)';
         ctx.beginPath();
         ctx.moveTo(nx0, Number(yE0));
         ctx.lineTo(nx1, Number(yE1));
@@ -1070,11 +1070,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         const boxW = Math.max(36, fvgRightEdge - x0);
         const isBull = z.type === 'bull';
 
-        ctx.fillStyle = isBull ? 'rgba(255, 59, 92, 0.11)' : 'rgba(0, 229, 163, 0.10)';
+        ctx.fillStyle = isBull ? 'rgba(217, 56, 41, 0.09)' : 'rgba(14, 143, 91, 0.09)';
         ctx.fillRect(x0, boxY, boxW, boxH);
 
         ctx.save();
-        ctx.strokeStyle = isBull ? 'rgba(255, 59, 92, 0.52)' : 'rgba(0, 229, 163, 0.50)';
+        ctx.strokeStyle = isBull ? 'rgba(217, 56, 41, 0.45)' : 'rgba(14, 143, 91, 0.45)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(x0, boxY);
@@ -1086,7 +1086,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         const yMid = series.priceToCoordinate(z.ce_mid);
         if (yMid !== null && z.ce_mid >= z.bottom && z.ce_mid <= z.top && boxH >= 12) {
           ctx.setLineDash([3, 4]);
-          ctx.strokeStyle = isBull ? 'rgba(255, 143, 163, 0.42)' : 'rgba(110, 255, 212, 0.42)';
+          ctx.strokeStyle = isBull ? 'rgba(217, 56, 41, 0.35)' : 'rgba(14, 143, 91, 0.35)';
           ctx.beginPath();
           ctx.moveTo(x0, Number(yMid));
           ctx.lineTo(x0 + boxW, Number(yMid));
@@ -1098,16 +1098,16 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           const fillTxt = z.fill_pct >= 5 ? ` · 补${Math.round(z.fill_pct)}%` : '';
           const lbl =
             lang === 'zh'
-              ? `📦 ${isBull ? '多头FVG' : '空头FVG'} $${fmtPrice(z.bottom)}~$${fmtPrice(z.top)}${fillTxt}`
+              ? `${isBull ? '多头FVG' : '空头FVG'} $${fmtPrice(z.bottom)}~$${fmtPrice(z.top)}${fillTxt}`
               : `${isBull ? 'Bull FVG' : 'Bear FVG'} $${fmtPrice(z.bottom)}-$${fmtPrice(z.top)}`;
           const pillX = Math.max(12, Math.min(x0 + 6, Math.max(12, fvgRightEdge - 340)));
           drawPill(
             lbl,
             pillX,
             boxY + boxH / 2,
-            isBull ? '#ff8fa3' : '#6effd4',
-            isBull ? 'rgba(32, 8, 16, 0.90)' : 'rgba(6, 26, 20, 0.90)',
-            isBull ? 'rgba(255, 59, 92, 0.52)' : 'rgba(0, 229, 163, 0.52)',
+            isBull ? '#B91C1C' : '#0E8F5B',
+            'rgba(252, 249, 242, 0.94)',
+            isBull ? 'rgba(217, 56, 41, 0.48)' : 'rgba(14, 143, 91, 0.48)',
             false
           );
         }
@@ -1200,15 +1200,15 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             const downW = totalW - upW;
             const inVa = i >= vaLo && i <= vaHi;
             const isPoc = i === pocIdx;
-            const alpha = isPoc ? 0.62 : inVa ? 0.36 : 0.14;
+            const alpha = isPoc ? 0.52 : inVa ? 0.28 : 0.11;
 
-            ctx.fillStyle = `rgba(0, 229, 163, ${alpha})`;
+            ctx.fillStyle = `rgba(14, 143, 91, ${alpha})`;
             ctx.fillRect(rightEdge - downW, barY, downW, barH);
-            ctx.fillStyle = `rgba(255, 59, 92, ${alpha})`;
+            ctx.fillStyle = `rgba(217, 56, 41, ${alpha})`;
             ctx.fillRect(rightEdge - totalW, barY, upW, barH);
 
             if (isPoc) {
-              ctx.strokeStyle = '#ffd400';
+              ctx.strokeStyle = '#F05C00';
               ctx.lineWidth = 1.5;
               ctx.strokeRect(rightEdge - totalW, barY, totalW, barH);
             }
@@ -1229,7 +1229,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           if (yVah !== null && yVah > 8 && yVah < cssH - 8) {
             ctx.save();
             ctx.setLineDash([3, 4]);
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.52)';
+            ctx.strokeStyle = 'rgba(29, 78, 216, 0.45)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(10, yVah);
@@ -1241,9 +1241,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
                 `▲ VAH 70%筹码上沿 $${fmtPrice(vahPrice)} (放量站上加速)`,
                 12,
                 yVah,
-                '#bae6fd',
-                'rgba(8, 28, 38, 0.88)',
-                'rgba(56, 189, 248, 0.45)'
+                '#1D4ED8',
+                'rgba(252, 249, 242, 0.94)',
+                'rgba(29, 78, 216, 0.42)'
               );
             }
           }
@@ -1251,7 +1251,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           if (yVal !== null && yVal > 8 && yVal < cssH - 8) {
             ctx.save();
             ctx.setLineDash([3, 4]);
-            ctx.strokeStyle = 'rgba(0, 229, 163, 0.5)';
+            ctx.strokeStyle = 'rgba(14, 143, 91, 0.45)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(10, yVal);
@@ -1263,9 +1263,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
                 `▼ VAL 70%筹码下沿 $${fmtPrice(valPrice)} (跌破防跳水)`,
                 12,
                 yVal,
-                '#a7f3d0',
-                'rgba(6, 26, 20, 0.88)',
-                'rgba(0, 229, 163, 0.45)'
+                '#0E8F5B',
+                'rgba(252, 249, 242, 0.94)',
+                'rgba(14, 143, 91, 0.42)'
               );
             }
           }
@@ -1273,7 +1273,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
           if (yPoc !== null && yPoc > 8 && yPoc < cssH - 8) {
             ctx.save();
             ctx.setLineDash([6, 4]);
-            ctx.strokeStyle = '#ffd400';
+            ctx.strokeStyle = '#F05C00';
             ctx.lineWidth = 1.6;
             ctx.beginPath();
             ctx.moveTo(10, yPoc);
@@ -1284,16 +1284,16 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             let labelY: number = yPoc;
             if (yVah !== null && Math.abs(labelY - yVah) < 20) labelY = Number(yPoc) + 18;
             const roleTxt = lastClose >= pocPrice ? '现价在上=强支撑' : '现价在下=套牢压力墙';
-            const resTxt = isEmaResonant ? ' · ★与白线共振' : '';
+            const resTxt = isEmaResonant ? ' · 与均线共振' : '';
             drawPill(
               showFullLabels
-                ? `🎯 POC 庄家成本峰 $${fmtPrice(pocPrice)} · ${roleTxt}${resTxt}`
-                : `🎯 POC $${fmtPrice(pocPrice)}`,
+                ? `POC 庄家成本峰 $${fmtPrice(pocPrice)} · ${roleTxt}${resTxt}`
+                : `POC $${fmtPrice(pocPrice)}`,
               12,
               labelY,
-              '#ffd400',
-              'rgba(22, 20, 6, 0.92)',
-              'rgba(255, 212, 0, 0.65)'
+              '#D95000',
+              'rgba(245, 233, 217, 0.96)',
+              'rgba(240, 92, 0, 0.55)'
             );
           }
         }
@@ -1312,22 +1312,22 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         // Profit zone (Red-Up tint)
         const pTop = Math.min(yEntry, yTarget);
         const pH = Math.max(4, Math.abs(yTarget - yEntry));
-        ctx.fillStyle = 'rgba(255, 59, 92, 0.16)';
+        ctx.fillStyle = 'rgba(217, 56, 41, 0.10)';
         ctx.fillRect(boxX, pTop, boxW, pH);
-        ctx.strokeStyle = 'rgba(255, 59, 92, 0.72)';
+        ctx.strokeStyle = 'rgba(217, 56, 41, 0.65)';
         ctx.lineWidth = 1.2;
         ctx.strokeRect(boxX, pTop, boxW, pH);
 
-        // Risk/Stop zone (Cyan-Green tint)
+        // Risk/Stop zone (Emerald tint)
         const sTop = Math.min(yEntry, yStop);
         const sH = Math.max(4, Math.abs(yStop - yEntry));
-        ctx.fillStyle = 'rgba(0, 229, 163, 0.14)';
+        ctx.fillStyle = 'rgba(14, 143, 91, 0.10)';
         ctx.fillRect(boxX, sTop, boxW, sH);
-        ctx.strokeStyle = 'rgba(0, 229, 163, 0.72)';
+        ctx.strokeStyle = 'rgba(14, 143, 91, 0.65)';
         ctx.strokeRect(boxX, sTop, boxW, sH);
 
         // Entry mid line
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#141413';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(boxX, yEntry);
@@ -1341,28 +1341,28 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
         const rewPct = (rewDist / rrTool.entry) * 100;
 
         drawPill(
-          `🎯 止盈 $${fmtPrice(rrTool.target)} (+${rewPct.toFixed(1)}%)`,
+          `止盈 $${fmtPrice(rrTool.target)} (+${rewPct.toFixed(1)}%)`,
           boxX + boxW / 2 - 75,
           yTarget,
-          '#ff8fa3',
-          'rgba(32, 8, 14, 0.92)',
-          'rgba(255, 59, 92, 0.65)'
+          '#B91C1C',
+          'rgba(252, 249, 242, 0.96)',
+          'rgba(217, 56, 41, 0.60)'
         );
         drawPill(
-          `📐 ${rrTool.side === 'LONG' ? '多头' : '空头'} 盈亏比 ${rrRatio.toFixed(2)} : 1`,
+          `${rrTool.side === 'LONG' ? '多头' : '空头'} 盈亏比 ${rrRatio.toFixed(2)} : 1`,
           boxX + 8,
           yEntry,
-          '#ffffff',
-          'rgba(10, 24, 20, 0.94)',
-          '#ffffff'
+          '#F8F3E7',
+          '#141413',
+          '#141413'
         );
         drawPill(
-          `🛑 止损 $${fmtPrice(rrTool.stop)} (-${stopPct.toFixed(1)}%)`,
+          `止损 $${fmtPrice(rrTool.stop)} (-${stopPct.toFixed(1)}%)`,
           boxX + boxW / 2 - 75,
           yStop,
-          '#6effd4',
-          'rgba(6, 26, 20, 0.92)',
-          'rgba(0, 229, 163, 0.65)'
+          '#0E8F5B',
+          'rgba(252, 249, 242, 0.96)',
+          'rgba(14, 143, 91, 0.60)'
         );
       }
     }
@@ -1373,22 +1373,22 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       const xA = mainChart.timeScale().timeToCoordinate(a.time as UTCTimestamp);
       const yA = series.priceToCoordinate(a.price);
       if (xA !== null && yA !== null) {
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = '#F05C00';
         ctx.beginPath();
         ctx.arc(xA, yA, 5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = '#FCF9F2';
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
         if (measurePts.length === 1) {
           drawPill(
-            `📏 起点 $${fmtPrice(a.price)} · 请再点选终点`,
+            `起点 $${fmtPrice(a.price)} · 请再点选终点`,
             xA + 10,
             yA - 14,
-            '#e0f2fe',
-            'rgba(8, 28, 38, 0.92)',
-            '#38bdf8'
+            '#141413',
+            'rgba(252, 249, 242, 0.96)',
+            '#F05C00'
           );
         } else {
           const b = measurePts[1];
@@ -1400,11 +1400,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             const w = Math.max(4, Math.abs(xB - xA));
             const h = Math.max(4, Math.abs(yB - yA));
 
-            ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+            ctx.fillStyle = 'rgba(240, 92, 0, 0.09)';
             ctx.fillRect(leftX, topY, w, h);
             ctx.save();
             ctx.setLineDash([4, 3]);
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = '#F05C00';
             ctx.lineWidth = 1.4;
             ctx.strokeRect(leftX, topY, w, h);
             ctx.beginPath();
@@ -1413,7 +1413,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             ctx.stroke();
             ctx.restore();
 
-            ctx.fillStyle = '#ffd400';
+            ctx.fillStyle = '#141413';
             ctx.beginPath();
             ctx.arc(xB, yB, 5, 0, Math.PI * 2);
             ctx.fill();
@@ -1422,14 +1422,14 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             const bars = Math.abs(b.index - a.index) + 1;
             const days = Math.abs(b.time - a.time) / 86400;
             const spanTxt = days >= 1 ? `约 ${days.toFixed(1)} 天` : `约 ${(days * 24).toFixed(1)} 小时`;
-            const summary = `📏 ${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% | ${bars} 根K线 (${spanTxt})`;
+            const summary = `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}% | ${bars} 根K线 (${spanTxt})`;
             drawPill(
               summary,
               leftX + w / 2 - 90,
               Math.max(20, topY - 14),
-              pct >= 0 ? '#ff8fa3' : '#6effd4',
-              'rgba(7, 19, 24, 0.94)',
-              '#38bdf8'
+              pct >= 0 ? '#D93829' : '#0E8F5B',
+              'rgba(252, 249, 242, 0.96)',
+              '#F05C00'
             );
           }
         }
@@ -1526,11 +1526,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
       const dirLabel = al.direction === 'above' ? (lang === 'zh' ? '上穿' : 'Above') : (lang === 'zh' ? '下破' : 'Below');
       const line = series.createPriceLine({
         price: al.targetPrice,
-        color: '#ffd400',
+        color: '#F05C00',
         lineWidth: 2,
         lineStyle: LineStyle.Dashed,
         axisLabelVisible: true,
-        title: `🔔 ${dirLabel} ${fmtPrice(al.targetPrice)}`,
+        title: `${dirLabel} ${fmtPrice(al.targetPrice)}`,
       });
       alertLinesRef.current.push(line);
     }
@@ -1546,11 +1546,11 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
             : 'Paper Short';
       const posLine = series.createPriceLine({
         price: paperPosition.entryPrice,
-        color: '#38bdf8',
+        color: '#1D4ED8',
         lineWidth: 2,
         lineStyle: LineStyle.Solid,
         axisLabelVisible: true,
-        title: `🎯 ${sideLabel} ${fmtPrice(paperPosition.entryPrice)}`,
+        title: `${sideLabel} ${fmtPrice(paperPosition.entryPrice)}`,
       });
       alertLinesRef.current.push(posLine);
     }

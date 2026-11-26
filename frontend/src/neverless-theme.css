@@ -1,0 +1,1266 @@
+/* ============================================================================
+   NEVERLESS EDITORIAL FINTECH THEME
+   Warm editorial ivory/cream paper canvas (#F8F3E7), crisp alabaster cards
+   (#FCF9F2), warm sand/peach hero surfaces (#F5E9D9), pure obsidian ink
+   (#141413), paper hairlines (#E5DEC9), outlined capsules, and disciplined
+   international vermilion (#F05C00) brand accent.
+   ============================================================================ */
+
+:root {
+  --bg-root: #F8F3E7;
+  --bg-panel: #F8F3E7;
+  --bg-card: #FCF9F2;
+  --bg-hover: #EFE8D8;
+  --bg-sand: #F3EBDC;
+  --bg-peach: #F5E9D9;
+  --border: #E5DEC9;
+  --border-bright: #CFC6B2;
+  --border-ink: #1C1C1E;
+  --text-main: #141413;
+  --text-muted: #5F5C55;
+  --text-dim: #8E8A80;
+  --nv-orange: #F05C00;
+  --nv-orange-bg: rgba(240, 92, 0, 0.08);
+  --bull: #D93829;
+  --bull-bg: rgba(217, 56, 41, 0.09);
+  --bear: #0E8F5B;
+  --bear-bg: rgba(14, 143, 91, 0.09);
+  --amber: #B45309;
+  --amber-bg: rgba(180, 83, 9, 0.09);
+  --cobalt: #1D4ED8;
+  --cobalt-bg: rgba(29, 78, 216, 0.08);
+  --plum: #7E22CE;
+  --plum-bg: rgba(126, 34, 206, 0.08);
+  --mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  background: #F8F3E7 !important;
+  color: #141413 !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Helvetica Neue', sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-shell {
+  background: #F8F3E7 !important;
+  color: #141413 !important;
+}
+
+.app-shell * {
+  font-variant-numeric: tabular-nums;
+}
+
+.bull {
+  color: #D93829 !important;
+}
+
+.bear,
+.dn,
+.emerald,
+.ekc-val.emerald,
+.ekc-bpill.bull em,
+.e3c-sub-title.bull,
+.ptb-title,
+.heatmap-sector-avg.down,
+.pro-tool-btn.paper-btn.active {
+  color: #0E8F5B !important;
+}
+
+.muted {
+  color: #5F5C55 !important;
+}
+
+/* Editorial bold condensed display numerals & headings */
+.sh-price,
+.ekc-val,
+.calc-kpi strong,
+.cal-clock-digits,
+.brand-zh {
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+
+.slogan-en {
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-style: italic;
+  color: #5F5C55 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.slogan-zh,
+.version-tag {
+  color: #8E8A80 !important;
+}
+
+/* ── Topbar (Crisp Ivory Editorial Header) ─────────────────────────────────── */
+.topbar {
+  height: 52px !important;
+  padding: 0 14px !important;
+  gap: 8px !important;
+  background: #F8F3E7 !important;
+  border-bottom: 1px solid #E5DEC9 !important;
+  box-shadow: none !important;
+  z-index: 40;
+}
+
+.brand-group {
+  flex-shrink: 0;
+  gap: 8px !important;
+}
+
+.brand-logo {
+  flex-shrink: 0;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  background: #141413 !important;
+  border: 1px solid #141413 !important;
+  color: #F8F3E7 !important;
+  box-shadow: none !important;
+}
+
+.brand-zh {
+  color: #141413 !important;
+  font-size: 16px !important;
+  white-space: nowrap;
+}
+
+.brand-sep {
+  color: #CFC6B2 !important;
+}
+
+.brand-en {
+  color: #8E8A80 !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 1640px) {
+  .brand-sep,
+  .brand-en {
+    display: none !important;
+  }
+}
+
+/* ── View Switcher Capsules ────────────────────────────────────────────────── */
+.view-switcher {
+  background: #EFE8D8 !important;
+  border: 1px solid #E5DEC9 !important;
+  border-radius: 999px !important;
+  padding: 3px !important;
+  box-shadow: none !important;
+  gap: 2px !important;
+  flex-shrink: 0;
+}
+
+.vs-btn {
+  border-radius: 999px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: #5F5C55 !important;
+  padding: 4px 11px !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  transition: all 0.16s ease !important;
+}
+
+.vs-btn:hover {
+  color: #141413 !important;
+  background: rgba(252, 249, 242, 0.7) !important;
+}
+
+.vs-btn.active,
+.vs-btn.radar.active,
+.vs-btn.calendar.active,
+.vs-btn.etf-plan.active,
+.vs-btn.calculator.active {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  box-shadow: none !important;
+  color: #F8F3E7 !important;
+}
+
+.vs-badge,
+.vs-badge.cal,
+.mbn-badge.cal,
+.rs-tab-badge {
+  background: #F05C00 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+}
+
+/* Global Topbar Pills & Action Buttons */
+.topbar-global-pills,
+.top-actions {
+  flex-shrink: 0;
+  gap: 6px !important;
+}
+
+.tg-pill,
+.btn-display-scale,
+.btn-download-app,
+.btn-app-dl,
+.status-badge,
+.lang-switch,
+.btn-back-chart {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: #141413 !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  transition: all 0.16s ease;
+}
+
+.tg-pill.vix-caution {
+  background: rgba(180, 83, 9, 0.08) !important;
+  border-color: rgba(180, 83, 9, 0.35) !important;
+  color: #B45309 !important;
+}
+
+.tg-pill:hover,
+.btn-display-scale:hover,
+.btn-download-app:hover,
+.btn-app-dl:hover,
+.status-badge:hover,
+.btn-back-chart:hover {
+  background: #FFFFFF !important;
+  border-color: #141413 !important;
+  color: #141413 !important;
+}
+
+.btn-display-scale.active {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  color: #F8F3E7 !important;
+}
+
+.btn-refresh {
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  background: #141413 !important;
+  border: 1px solid #141413 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: #F8F3E7 !important;
+  font-weight: 600 !important;
+  transition: all 0.16s ease;
+}
+
+.btn-refresh:hover {
+  background: #F05C00 !important;
+  border-color: #F05C00 !important;
+  color: #FFFFFF !important;
+}
+
+.status-badge.live-on {
+  border-color: rgba(14, 143, 91, 0.38) !important;
+  background: rgba(14, 143, 91, 0.08) !important;
+  color: #0E8F5B !important;
+}
+
+.status-badge.live-on .dot {
+  background: #0E8F5B !important;
+}
+
+.status-badge.replaying {
+  background: rgba(180, 83, 9, 0.10) !important;
+  border-color: rgba(180, 83, 9, 0.40) !important;
+  color: #B45309 !important;
+}
+
+.lang-switch button {
+  color: #5F5C55 !important;
+  white-space: nowrap !important;
+}
+
+.lang-switch button.active {
+  background: #141413 !important;
+  color: #F8F3E7 !important;
+  border-radius: 999px !important;
+}
+
+/* ── Left & Right Sidebars ─────────────────────────────────────────────────── */
+.left-sidebar {
+  background: #F8F3E7 !important;
+  border-right: 1px solid #E5DEC9 !important;
+}
+
+.right-sidebar {
+  background: #F8F3E7 !important;
+  border-left: 1px solid #E5DEC9 !important;
+  padding: 12px !important;
+  gap: 12px !important;
+}
+
+.side-market-tabs,
+.watchlist-tabs,
+.rs-tabs,
+.calc-tabs,
+.ad-tabs,
+.tf-group {
+  background: #EFE8D8 !important;
+  border: 1px solid #E5DEC9 !important;
+  border-radius: 999px !important;
+  padding: 3px !important;
+}
+
+.side-market-tabs button,
+.watchlist-tabs button,
+.rs-tab,
+.tf-btn,
+.ad-tab {
+  color: #5F5C55 !important;
+  background: transparent !important;
+  border-radius: 999px !important;
+  border-color: transparent !important;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.side-market-tabs button:hover,
+.watchlist-tabs button:hover,
+.rs-tab:hover,
+.tf-btn:hover,
+.ad-tab:hover {
+  color: #141413 !important;
+}
+
+.side-market-tabs button.active,
+.watchlist-tabs button.active,
+.rs-tab.active,
+.tf-btn.active,
+.ad-tab.active {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  color: #F8F3E7 !important;
+  box-shadow: none !important;
+}
+
+.side-strat-pills button {
+  background: #FCF9F2 !important;
+  border: 1px solid #E5DEC9 !important;
+  color: #5F5C55 !important;
+  border-radius: 999px !important;
+}
+
+.side-strat-pills button.active {
+  background: rgba(240, 92, 0, 0.08) !important;
+  border-color: #F05C00 !important;
+  color: #F05C00 !important;
+  font-weight: 700;
+}
+
+.symbol-item,
+.sym-row {
+  border-radius: 12px !important;
+  border: 1px solid transparent !important;
+  border-bottom: 1px solid rgba(229, 222, 201, 0.65) !important;
+  background: transparent !important;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.symbol-item:hover,
+.sym-row:hover {
+  background: #EFE8D8 !important;
+}
+
+.symbol-item.active,
+.sym-row.active {
+  background: #F5E9D9 !important;
+  border: 1px solid #F05C00 !important;
+  box-shadow: none !important;
+}
+
+.sym-badge {
+  background: #FCF9F2 !important;
+  border: 1px solid #1C1C1E !important;
+  color: #141413 !important;
+  border-radius: 50% !important;
+  font-weight: 700 !important;
+}
+
+.sym-code,
+.sym-px,
+.sh-title,
+.sh-price {
+  color: #141413 !important;
+}
+
+.sym-name,
+.sh-sub {
+  color: #5F5C55 !important;
+}
+
+.star-btn,
+.sh-star {
+  color: #A8A295 !important;
+}
+
+.star-btn.fav,
+.sh-star.fav {
+  color: #F05C00 !important;
+}
+
+/* ── Main Workbench Strips & Toolbar ──────────────────────────────────────── */
+.symbol-header,
+.toolbar-row,
+.layers-row,
+.layers-row.scene-preset-bar,
+.macro-strip,
+.macro-strip.wick-high,
+.ohlc-bar,
+.replay-bar,
+.paper-trade-bar,
+.pri-chart-head,
+.sec-chart-head {
+  background: #F8F3E7 !important;
+  border-color: #E5DEC9 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  color: #141413 !important;
+}
+
+.ohlc-bar,
+.ebc-ohlc-bar {
+  background: #FCF9F2 !important;
+  border-color: #E5DEC9 !important;
+  color: #5F5C55 !important;
+}
+
+.sh-avatar {
+  background: #141413 !important;
+  color: #F8F3E7 !important;
+  border: none !important;
+  border-radius: 50% !important;
+}
+
+.sh-session-pill,
+.etf-session-chip {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #141413 !important;
+  border-radius: 999px !important;
+}
+
+.sh-session-pill.sess-pre {
+  background: rgba(180, 83, 9, 0.08) !important;
+  border-color: rgba(180, 83, 9, 0.35) !important;
+  color: #B45309 !important;
+}
+
+.chart-panel,
+.primary-chart-pane,
+.secondary-chart-pane,
+.ebc-canvas-wrap {
+  background: #FCF9F2 !important;
+  border-color: #E5DEC9 !important;
+}
+
+.regime-banner,
+.mobile-quick-advice {
+  background: #FCF9F2 !important;
+  border: 1px solid #E5DEC9 !important;
+  color: #141413 !important;
+  box-shadow: none !important;
+}
+
+.regime-banner.tangled .rb-title,
+.regime-banner.bear_chop .rb-title {
+  color: #B45309 !important;
+}
+
+.regime-banner.bear_trend .rb-title {
+  color: #D93829 !important;
+}
+
+/* Outlined Pills & Scene Buttons */
+.scene-btn,
+.pro-tool-btn,
+.ma-preset,
+.etf-chip,
+.calc-qchip,
+.layers-popover-btn,
+.btn-kline-jump,
+.map-btn,
+.ad-btn,
+.macro-toggle-btn,
+.side-radar-jump,
+.rfb-pill,
+.rfb-sector,
+.rfb-strat,
+.cal-tab-btn,
+.ebc-tab,
+.lp-actions button,
+.sec-close-btn,
+.pri-chart-head .sec-tf-btn,
+.ptb-btn {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: #141413 !important;
+  transition: all 0.15s ease !important;
+}
+
+.scene-btn:hover,
+.pro-tool-btn:hover,
+.ma-preset:hover,
+.etf-chip:hover,
+.calc-qchip:hover,
+.layers-popover-btn:hover,
+.btn-kline-jump:hover,
+.map-btn:hover,
+.ad-btn:hover,
+.macro-toggle-btn:hover,
+.side-radar-jump:hover,
+.rfb-pill:hover,
+.rfb-sector:hover,
+.rfb-strat:hover,
+.cal-tab-btn:hover,
+.ebc-tab:hover,
+.ma-preset.bull-band-preset:hover {
+  background: #FFFFFF !important;
+  border-color: #141413 !important;
+  color: #141413 !important;
+}
+
+.scene-btn.active,
+.pro-tool-btn.active,
+.ma-preset.active,
+.ma-preset.bull-band-preset.active,
+.etf-chip.active,
+.calc-qchip.active,
+.layers-popover-btn.open,
+.rfb-pill.active,
+.rfb-sector.active,
+.rfb-strat.active,
+.dsp-pill.active,
+.dsp-res-btn:hover {
+  background: rgba(240, 92, 0, 0.08) !important;
+  border: 1.5px solid #F05C00 !important;
+  box-shadow: none !important;
+  color: #D95000 !important;
+  font-weight: 700 !important;
+}
+
+.ad-btn.primary,
+.cal-tab-btn.active,
+.ebc-tab.active,
+.calc-tab.active,
+.pri-chart-head .sec-tf-btn.active {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  color: #F8F3E7 !important;
+  box-shadow: none !important;
+}
+
+.calc-tab {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #5F5C55 !important;
+  border-radius: 12px !important;
+}
+
+.calc-tab:hover {
+  color: #141413 !important;
+  border-color: #141413 !important;
+}
+
+/* ── Editorial Alabaster Cards Across All 5 Views ──────────────────────────── */
+.panel-card,
+.etf-kpi-card,
+.etf-bench-chart-card,
+.etf-tranche-card,
+.etf-3x-section,
+.etf-3x-card,
+.etf-table-section,
+.etf-ledger-card,
+.calc-card,
+.calc-kpi,
+.radar-cmd-card,
+.radar-card,
+.cal-event-card,
+.cal-earning-card,
+.etc-row,
+.e3c-step,
+.e3c-gun-item,
+.e3c-exit-row,
+.elc-meter-row,
+.ekc-bpill,
+.e3c-budget-bar,
+.heatmap-legend-bar,
+.heatmap-sector-card,
+.calc-rr-bar,
+.cal-earning-card.watchlist {
+  background: #FCF9F2 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid #E5DEC9 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 2px rgba(20, 20, 19, 0.04) !important;
+  color: #141413 !important;
+}
+
+.etf-kpi-card,
+.calc-kpi,
+.etc-row,
+.e3c-step,
+.e3c-gun-item,
+.e3c-exit-row,
+.elc-meter-row,
+.ekc-bpill {
+  background: #FFFFFF !important;
+  border-radius: 12px !important;
+  border: 1px solid #E5DEC9 !important;
+  box-shadow: none !important;
+}
+
+/* Signature Neverless Warm Peach/Apricot Hero Blocks */
+.etf-hero-panel,
+.cal-hero-countdown,
+.cal-hero-countdown.urgent,
+.plan-box,
+.ebc-verdict-banner,
+.etc-row.triggered,
+.e3c-gun-item.triggered {
+  background: #F5E9D9 !important;
+  border: 1px solid #E2D1BC !important;
+  border-radius: 18px !important;
+  box-shadow: none !important;
+  color: #141413 !important;
+}
+
+.ebc-verdict-banner {
+  border-left: 3px solid #F05C00 !important;
+  border-radius: 10px !important;
+}
+
+.radar-card:hover,
+.cal-event-card:hover,
+.cal-earning-card:hover {
+  border-color: #141413 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(20, 20, 19, 0.06) !important;
+}
+
+/* ── Floating Popovers, Overlays & Modals ──────────────────────────────────── */
+.plan-overlay,
+.vpvr-guide-card,
+.layers-popover,
+.alerts-drawer,
+.cmdk-card,
+.cmdk-modal,
+.app-modal-card,
+.display-settings-popover,
+.display-scale-popover,
+.rr-control-bar,
+.alert-toast,
+.chart-pick-alert-banner {
+  background: rgba(252, 249, 242, 0.96) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  border: 1px solid #CFC6B2 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 18px 44px rgba(20, 20, 19, 0.14) !important;
+  color: #141413 !important;
+}
+
+.cmdk-item.active,
+.cmdk-item:hover {
+  background: #F5E9D9 !important;
+}
+
+.cmdk-item-badge {
+  background: #EFE8D8 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #141413 !important;
+}
+
+/* ── Crisp White Paper Inputs & Selects ────────────────────────────────────── */
+input[type='number'],
+input[type='text'],
+input[type='password'],
+select,
+.search-box,
+.search-box input,
+.etf-num-input,
+.cc-num-lg,
+.ad-input,
+.ad-select,
+.rr-field input,
+.ma-config-inline input,
+.ma-config-inline select,
+.side-sector-select {
+  background: #FFFFFF !important;
+  border: 1px solid #D8D1C3 !important;
+  border-radius: 10px !important;
+  color: #141413 !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-box input {
+  border: none !important;
+  background: transparent !important;
+}
+
+input:focus,
+select:focus {
+  outline: none !important;
+  border-color: #F05C00 !important;
+  box-shadow: 0 0 0 3px rgba(240, 92, 0, 0.12) !important;
+}
+
+/* ── Exhaustive Contrast Overrides (No Invisible White/Neon Text on Cream) ──── */
+.ma-fast,
+.etc-head h3,
+.etc-title,
+.etf-section-head h2,
+.e3c-sym,
+.eer-head strong,
+.et-sym-cell strong,
+.et-num-main,
+.etf-ledger-card h3,
+.ekc-val,
+.cc-head h3,
+.cc-num-lg,
+.calc-kpi strong,
+.cal-hero-title,
+.cal-clock-digits,
+.cal-ev-name,
+.cal-earn-sym,
+.cal-day-header h3,
+.cal-metric-cell b,
+.cal-earn-metrics > div b,
+.app-modal-head h3,
+.aib-title,
+.cmdk-input-row input,
+.cmdk-item-title,
+.heatmap-sector-title,
+.ma-rule-chip,
+.dsp-step-btn,
+.dsp-reset-btn,
+.ptb-btn.reset,
+.cal-impact-pill.low,
+.etc-trig-badge,
+.eer-trig,
+.crb-loss,
+.card-header,
+.radar-card .rc-sym,
+.radar-title,
+.radar-title-badge {
+  color: #141413 !important;
+}
+
+.ma-fast {
+  font-weight: 700 !important;
+}
+
+.ma-slow {
+  color: #F05C00 !important;
+  font-weight: 700 !important;
+}
+
+.radar-title-badge {
+  background: #F5E9D9 !important;
+  border: 1px solid #E2D1BC !important;
+  border-radius: 999px !important;
+}
+
+/* High-contrast Warm Amber/Orange replacements for neon yellows (#ffd400/#f5b041) */
+.gold,
+.etc-amt,
+.et-buy-shares,
+.e3c-price,
+.eer-head span,
+.advice-badge.wait,
+.bg-tip,
+.opt-trigger,
+.water-pill,
+.mg-squeeze,
+.mg-wick,
+.cycle-perm.coil_watch,
+.c-step.done .c-dot,
+.news-30m-badge,
+.ni-age.hot,
+.ni-tag.volatile,
+.sym-setup-tag.setup-ma_squeeze,
+.rth-bolt,
+.rcc-warn,
+.rc-setup-pill.setup-ma_squeeze,
+.warn-text,
+.rc-pos,
+.pro-tool-btn.alert-btn.active,
+.ad-title,
+.ad-btn,
+.ad-chip,
+.pri-chart-title,
+.ptb-jump-pos,
+.cal-impact-pill.medium,
+.cal-clock-label,
+.cal-metric-cell b.highlight,
+.cal-watch-tag,
+.alert-toast,
+.dsp-head b,
+.cal-guide-pills span,
+.cal-ev-playbook,
+.cal-ev-playbook span,
+.vpvr-guide-toggle,
+.vpvr-guide-body b.gold,
+.ebc-regime-pill.warn,
+.e3c-status.BUFFER_ZONE,
+.et-layer-badge.l3,
+.bull-band-readout.warn,
+.ad-ch-pill.warn,
+.ad-sym-pill,
+.cc-rr-pill.warn,
+.tag-pill,
+.sim-warn,
+.mqa-badge.wait {
+  color: #B45309 !important;
+}
+
+.sym-setup-tag.setup-ma_squeeze,
+.rc-setup-pill.setup-ma_squeeze,
+.cal-guide-pills span,
+.advice-badge.wait,
+.ebc-regime-pill.warn,
+.e3c-status.BUFFER_ZONE,
+.ad-ch-pill.warn,
+.ad-chip,
+.cc-rr-pill.warn {
+  background: rgba(180, 83, 9, 0.09) !important;
+  border-color: rgba(180, 83, 9, 0.32) !important;
+}
+
+/* Editorial Cobalt replacements for neon cyan (#38bdf8/#7dd3fc) */
+.ma-vwap,
+.rf-code,
+.rc-mkt-tag,
+.rc-setup-pill.setup-resilient_leader,
+.rc-jump-btn,
+.rc-macd-pill.state-below_recover,
+.bar-countdown-pill,
+.sec-chart-title,
+.cal-slot-tag,
+.cal-day-cnt,
+.cal-ev-why,
+.cal-ev-why span,
+.vpvr-guide-body b.sky,
+.rr-size-pill,
+.cmdk-ico,
+.dsp-res-val,
+.e3c-sub-title.left,
+.egi-top strong,
+.et-layer-badge.l2,
+.chart-loading-pill,
+.sym-setup-tag.setup-resilient_leader,
+.mqa-link,
+.mbn-btn.active,
+.mobile-switch-hint,
+.landscape-switcher button.active,
+.ls-radar-btn,
+.btn-expand-chart:hover,
+.btn-expand-chart.active,
+.ad-btn.pick,
+.ptb-btn.close {
+  color: #1D4ED8 !important;
+}
+
+.sym-setup-tag.setup-resilient_leader,
+.rc-setup-pill.setup-resilient_leader,
+.rc-macd-pill.state-below_recover,
+.et-layer-badge.l2,
+.bar-countdown-pill,
+.cal-slot-tag,
+.cal-day-cnt {
+  background: rgba(29, 78, 216, 0.08) !important;
+  border-color: rgba(29, 78, 216, 0.25) !important;
+}
+
+/* Deep Plum replacement for neon purple (#c084fc) */
+.sym-setup-tag.setup-bull_runner {
+  color: #7E22CE !important;
+  background: rgba(126, 34, 206, 0.08) !important;
+  border-color: rgba(126, 34, 206, 0.25) !important;
+}
+
+/* Muted errors & badges */
+.error-banner {
+  background: rgba(217, 56, 41, 0.09) !important;
+  border: 1px solid rgba(217, 56, 41, 0.35) !important;
+  color: #B91C1C !important;
+}
+
+.advice-badge.accumulate,
+.mqa-badge.accumulate {
+  background: rgba(217, 56, 41, 0.10) !important;
+  border-color: rgba(217, 56, 41, 0.35) !important;
+  color: #D93829 !important;
+}
+
+.advice-badge.avoid,
+.mqa-badge.avoid {
+  background: rgba(14, 143, 91, 0.10) !important;
+  border-color: rgba(14, 143, 91, 0.35) !important;
+  color: #0E8F5B !important;
+}
+
+.tm-fill-bottom {
+  background: linear-gradient(90deg, #0E8F5B, #16A34A) !important;
+}
+
+.rc-foot {
+  background: rgba(239, 232, 216, 0.45) !important;
+  border-top: 1px solid #E5DEC9 !important;
+}
+
+.ad-tab-cnt {
+  background: #F05C00 !important;
+  color: #FFFFFF !important;
+}
+
+.ma-rule-chip {
+  background: #FFFFFF !important;
+  border: 1px solid #D8D1C3 !important;
+}
+
+.etc-share-pill,
+.e3c-budget-bar {
+  background: #F3EBDC !important;
+  border-color: #E2D1BC !important;
+  color: #141413 !important;
+}
+
+/* Ensure dark-ink CTA buttons preserve ivory/white text */
+.aib-btn.mac,
+.aib-btn.win,
+.aib-btn.ios {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  color: #F8F3E7 !important;
+}
+
+.aib-btn.mac:hover,
+.aib-btn.win:hover,
+.aib-btn.ios:hover {
+  background: #F05C00 !important;
+  border-color: #F05C00 !important;
+  color: #FFFFFF !important;
+}
+
+/* ETF Plan Chart Legend Dots matching Chart Canvas */
+.ebc-ma-legend .dot.ema20 { background: #141413 !important; }
+.ebc-ma-legend .dot.sma60 { background: #D97706 !important; }
+.ebc-ma-legend .dot.sma120 { background: #1D4ED8 !important; }
+.ebc-ma-legend .dot.sma200 { background: #7E22CE !important; }
+.ebc-ma-legend .dot.rsi { background: #0E8F5B !important; color: #0E8F5B !important; border-color: #E5DEC9 !important; }
+
+/* Heatmap Tiles */
+.heatmap-tile {
+  color: #141413 !important;
+  border-radius: 12px !important;
+}
+
+.heatmap-tile .hm-tile-sym,
+.heatmap-tile .hm-tile-score,
+.heatmap-tile .hm-tile-price {
+  color: #141413 !important;
+}
+
+/* ── Remaining Dark Boxes & Pastel Badges Audit Fix ───────────────────────── */
+.ohlc-bar {
+  font-size: 11px !important;
+  gap: 7px !important;
+  padding: 5px 10px !important;
+}
+
+.btn-reset-view,
+.btn-expand-chart {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #141413 !important;
+  border-radius: 999px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+}
+
+/* Workbench Beginner Checklist Box */
+.beginner-guide {
+  background: #F5E9D9 !important;
+  border: 1px solid #E2D1BC !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  color: #141413 !important;
+}
+
+.bg-title {
+  color: #141413 !important;
+  font-weight: 700 !important;
+}
+
+.htf-row {
+  color: #5F5C55 !important;
+}
+
+.htf-row b {
+  color: #141413 !important;
+}
+
+.htf-row.locked b {
+  color: #0E8F5B !important;
+}
+
+.htf-row.open b {
+  color: #D93829 !important;
+}
+
+.beginner-guide .bg-tip {
+  color: #9A3412 !important;
+}
+
+.earnings-iv-warn,
+.cal-hero-tip,
+.cal-iv-crush-banner {
+  color: #9A3412 !important;
+}
+
+.chart-loading-pill {
+  background: rgba(252, 249, 242, 0.96) !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #141413 !important;
+}
+
+.paper-trade-bar {
+  background: #FCF9F2 !important;
+  border-color: #E5DEC9 !important;
+}
+
+.ptb-stats,
+.ptb-pos,
+.sec-tf-btn,
+.rr-side-btn,
+.rr-field,
+.lp-head,
+.ad-close-x,
+.app-modal-head button,
+.aib-desc,
+.cmdk-input-row button,
+.etf-ctrl-group label,
+.etf-held-inputs span,
+.ekc-label,
+.ekc-sub,
+.ebc-ohlc-bar,
+.etc-row-desc,
+.etf-section-head p,
+.e3c-meta,
+.e3c-step p,
+.egi-desc,
+.eer-act,
+.et-num-sub,
+.elc-note,
+.cc-field label,
+.cal-country-tag,
+.cal-hero-meta,
+.cal-earn-name {
+  color: #5F5C55 !important;
+}
+
+.sec-tf-btn.active {
+  background: #141413 !important;
+  color: #F8F3E7 !important;
+}
+
+.sec-close-btn,
+.ptb-btn.long,
+.cc-side-btn.long.active,
+.rr-side-btn.long.active,
+.rr-ratio-pill.good,
+.hm-stat-badge.up,
+.hm-scale-label.up,
+.hm-tile-chg.up,
+.cal-impact-pill.high,
+.cal-status-pill.urgent,
+.ebc-regime-pill.bear,
+.etf-3x-rule-pill,
+.e3c-status.BEAR_LOCKED,
+.e3c-sub-title.exit,
+.et-layer-badge.l0,
+.et-exclude-tag,
+.et-margin-tag.ban,
+.rc-macd-pill.state-above_open,
+.cck-row.bad,
+.vpvr-guide-body b.bull,
+.bull-band-readout.bull {
+  color: #C81E1E !important;
+}
+
+.cc-side-btn.short.active,
+.cc-rr-pill.ok,
+.cck-row.ok,
+.sh-session-pill.sess-regular,
+.sh-session-pill.sess-crypto_24h,
+.rc-macd-pill.state-below_bear,
+.rfb-pill.subview.heatmap.active,
+.hm-stat-badge.down,
+.hm-scale-label.down,
+.hm-tile-chg.down,
+.ebc-regime-pill.bull,
+.etc-trig-badge.on,
+.ekc-badge,
+.e3c-status.BULL_OPEN,
+.et-layer-badge.l1,
+.et-margin-tag.ok,
+.egi-trig-pill,
+.ad-ch-pill.ok,
+.ma-alert-msg,
+.vpvr-guide-body b.cyan,
+.bull-band-readout.bear {
+  color: #0E8F5B !important;
+}
+
+.rc-macd-pill.state-above_consol,
+.rr-ratio-pill.weak {
+  color: #B45309 !important;
+}
+
+/* Pill Backgrounds matching High-Contrast Dark Ink on Warm Cream */
+.rc-macd-pill.state-above_open,
+.hm-stat-badge.up,
+.cal-impact-pill.high,
+.cal-status-pill.urgent,
+.ebc-regime-pill.bear,
+.e3c-status.BEAR_LOCKED,
+.et-layer-badge.l0,
+.et-margin-tag.ban,
+.cc-side-btn.long.active,
+.rr-side-btn.long.active,
+.rr-ratio-pill.good,
+.cck-row.bad {
+  background: rgba(217, 56, 41, 0.09) !important;
+  border-color: rgba(217, 56, 41, 0.32) !important;
+}
+
+.cc-side-btn.short.active,
+.cc-rr-pill.ok,
+.cck-row.ok,
+.sh-session-pill.sess-regular,
+.sh-session-pill.sess-crypto_24h,
+.rc-macd-pill.state-below_bear,
+.rfb-pill.subview.heatmap.active,
+.hm-stat-badge.down,
+.ebc-regime-pill.bull,
+.etc-trig-badge.on,
+.ekc-badge,
+.e3c-status.BULL_OPEN,
+.et-layer-badge.l1,
+.et-margin-tag.ok,
+.egi-trig-pill,
+.ad-ch-pill.ok {
+  background: rgba(14, 143, 91, 0.09) !important;
+  border-color: rgba(14, 143, 91, 0.30) !important;
+}
+
+.rc-macd-pill.state-above_consol,
+.rr-ratio-pill.weak {
+  background: rgba(180, 83, 9, 0.09) !important;
+  border-color: rgba(180, 83, 9, 0.30) !important;
+}
+
+/* Calculator Side & Bar Contrast */
+.cc-side-btn {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #5F5C55 !important;
+  border-radius: 999px !important;
+}
+
+.crb-loss {
+  background: #0E8F5B !important;
+}
+
+.crb-win {
+  background: #D93829 !important;
+}
+
+/* Calendar Hero Countdown, Clock Box & Filter Pills */
+.cal-hero-countdown.calm {
+  background: #F5E9D9 !important;
+  border: 1px solid #E2D1BC !important;
+}
+
+.cal-hero-clock {
+  background: #FFFFFF !important;
+  border: 1px solid #D8D1C3 !important;
+  border-radius: 14px !important;
+  color: #141413 !important;
+}
+
+.filter-pill {
+  background: #FCF9F2 !important;
+  border: 1px solid #D8D1C3 !important;
+  color: #141413 !important;
+}
+
+.filter-pill.active {
+  background: #141413 !important;
+  border-color: #141413 !important;
+  color: #F8F3E7 !important;
+}
+
+/* Measure Banner, MA Config, App Install Blocks */
+.chart-pick-alert-banner.measure,
+.btn-clear-measure {
+  background: rgba(252, 249, 242, 0.96) !important;
+  border-color: #F05C00 !important;
+  color: #141413 !important;
+}
+
+.ma-ch-cfg,
+.app-install-block,
+.dsp-pill,
+.dsp-res-btn {
+  background: #FFFFFF !important;
+  border: 1px solid #E5DEC9 !important;
+  color: #141413 !important;
+}
+
+/* Heatmap Cards & Score Badge */
+.hm-tile-score {
+  background: rgba(20, 20, 19, 0.09) !important;
+  color: #141413 !important;
+}
+
+.hm-tile-bottom {
+  color: #5F5C55 !important;
+}
+
+.heatmap-sector-cnt {
+  background: #EFE8D8 !important;
+  color: #5F5C55 !important;
+}
+
+/* Crisp Warm Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(20, 20, 19, 0.16);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(20, 20, 19, 0.30);
+}

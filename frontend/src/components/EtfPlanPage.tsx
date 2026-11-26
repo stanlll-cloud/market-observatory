@@ -141,8 +141,8 @@ export const EtfPlanPage = memo(function EtfPlanPage({
 
     const chart = createChart(container, {
       layout: {
-        background: { type: ColorType.Solid, color: '#0b0e16' },
-        textColor: 'rgba(235, 240, 250, 0.58)',
+        background: { type: ColorType.Solid, color: '#FCF9F2' },
+        textColor: '#5F5C55',
         fontFamily: "'SF Mono', 'JetBrains Mono', Menlo, monospace",
         fontSize: 11,
       },
@@ -156,19 +156,19 @@ export const EtfPlanPage = memo(function EtfPlanPage({
         },
       },
       grid: {
-        vertLines: { color: 'rgba(255, 255, 255, 0.045)' },
-        horzLines: { color: 'rgba(255, 255, 255, 0.045)' },
+        vertLines: { color: 'rgba(28, 28, 30, 0.055)' },
+        horzLines: { color: 'rgba(28, 28, 30, 0.055)' },
       },
       crosshair: {
-        vertLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
-        horzLine: { color: 'rgba(10, 132, 255, 0.48)', width: 1, style: LineStyle.Dashed },
+        vertLine: { color: 'rgba(240, 92, 0, 0.45)', width: 1, style: LineStyle.Dashed },
+        horzLine: { color: 'rgba(240, 92, 0, 0.45)', width: 1, style: LineStyle.Dashed },
       },
       rightPriceScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         scaleMargins: { top: 0.08, bottom: 0.08 },
       },
       timeScale: {
-        borderColor: 'rgba(255, 255, 255, 0.09)',
+        borderColor: '#E5DEC9',
         timeVisible: false,
         rightOffset: 10,
         minBarSpacing: 2.2,
@@ -186,12 +186,12 @@ export const EtfPlanPage = memo(function EtfPlanPage({
     chartRef.current = chart;
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#ff3b5c',
-      downColor: '#00e5a3',
-      borderUpColor: '#ff3b5c',
-      borderDownColor: '#00e5a3',
-      wickUpColor: '#ff3b5c',
-      wickDownColor: '#00e5a3',
+      upColor: '#D93829',
+      downColor: '#0E8F5B',
+      borderUpColor: '#D93829',
+      borderDownColor: '#0E8F5B',
+      wickUpColor: '#D93829',
+      wickDownColor: '#0E8F5B',
     });
 
     candleSeries.setData(
@@ -205,10 +205,10 @@ export const EtfPlanPage = memo(function EtfPlanPage({
     );
 
     const maDefs = [
-      { pts: activeBench.ema20_line, color: '#f8fafc', width: 1 as const, title: 'EMA20' },
-      { pts: activeBench.sma60_line, color: '#f5c451', width: 1 as const, title: 'SMA60' },
-      { pts: activeBench.sma120_line, color: '#38bdf8', width: 1 as const, title: 'SMA120' },
-      { pts: activeBench.sma200_line, color: '#e879f9', width: 2 as const, title: 'SMA200 年线' },
+      { pts: activeBench.ema20_line, color: '#141413', width: 2 as const, title: 'EMA20' },
+      { pts: activeBench.sma60_line, color: '#D97706', width: 2 as const, title: 'SMA60' },
+      { pts: activeBench.sma120_line, color: '#1D4ED8', width: 1 as const, title: 'SMA120' },
+      { pts: activeBench.sma200_line, color: '#7E22CE', width: 2 as const, title: 'SMA200 年线' },
     ];
     for (const ma of maDefs) {
       if (!ma.pts?.length) continue;
@@ -225,10 +225,10 @@ export const EtfPlanPage = memo(function EtfPlanPage({
     // 关键操作价位水平触发线（牛市显示均线档，熊市/深调显示下方折价分批接筹档）
     const isBearZones = activeBench.zone_mode === 'dd_bear';
     const zoneColors = [
-      'rgba(248, 250, 252, 0.72)',
-      'rgba(245, 196, 81, 0.85)',
-      'rgba(56, 189, 248, 0.85)',
-      'rgba(232, 121, 249, 0.85)',
+      'rgba(20, 20, 19, 0.75)',
+      '#B45309',
+      '#1D4ED8',
+      '#7E22CE',
     ];
     const zonePriceLines: Array<{ price: number; color: string; style: LineStyle; title: string }> =
       activeBench.tranches?.length
@@ -245,19 +245,19 @@ export const EtfPlanPage = memo(function EtfPlanPage({
         : [
             {
               price: activeBench.zone1_price,
-              color: 'rgba(248, 250, 252, 0.72)',
+              color: 'rgba(20, 20, 19, 0.75)',
               style: LineStyle.Dotted,
               title: `1档40% EMA20 ($${activeBench.zone1_price})`,
             },
             {
               price: activeBench.zone2_price,
-              color: 'rgba(245, 196, 81, 0.85)',
+              color: '#B45309',
               style: LineStyle.Dotted,
               title: `2档30% SMA60 ($${activeBench.zone2_price})`,
             },
             {
               price: activeBench.zone3_price,
-              color: 'rgba(56, 189, 248, 0.85)',
+              color: '#1D4ED8',
               style: LineStyle.Dotted,
               title: `3档20% SMA120 ($${activeBench.zone3_price})`,
             },
@@ -266,19 +266,19 @@ export const EtfPlanPage = memo(function EtfPlanPage({
     const priceLines: Array<{ price: number; color: string; style: LineStyle; title: string }> = [
       {
         price: activeBench.euphoria_t1_price,
-        color: '#f59e0b',
+        color: '#B45309',
         style: LineStyle.Dashed,
         title: `3x止盈锁利 ($${activeBench.euphoria_t1_price})`,
       },
       {
         price: activeBench.unlock_3x_price,
-        color: '#34d399',
+        color: '#0E8F5B',
         style: LineStyle.Dashed,
         title: `3x右侧开闸 ($${activeBench.unlock_3x_price})`,
       },
       {
         price: activeBench.hard_stop_3x_price,
-        color: '#ff3b5c',
+        color: '#D93829',
         style: LineStyle.Dashed,
         title: `3x硬熔断线 ($${activeBench.hard_stop_3x_price})`,
       },

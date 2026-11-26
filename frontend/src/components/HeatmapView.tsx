@@ -17,24 +17,24 @@ function fmtPrice(p: number): string {
 function getHeatStyle(chg: number): React.CSSProperties {
   const abs = Math.min(8, Math.abs(chg));
   if (chg > 0.25) {
-    // 红涨 (#ff3b5c)
-    const alpha = 0.14 + (abs / 8) * 0.42;
+    // 红涨 (#D93829)
+    const alpha = 0.10 + (abs / 8) * 0.24;
     return {
-      background: `linear-gradient(155deg, rgba(255, 59, 92, ${alpha.toFixed(2)}), rgba(180, 28, 58, ${(alpha * 0.65).toFixed(2)}))`,
-      borderColor: `rgba(255, 59, 92, ${Math.min(0.85, alpha + 0.22).toFixed(2)})`,
+      background: `linear-gradient(155deg, rgba(217, 56, 41, ${alpha.toFixed(2)}), rgba(217, 56, 41, ${(alpha * 0.45).toFixed(2)}))`,
+      borderColor: `rgba(217, 56, 41, ${Math.min(0.55, alpha + 0.16).toFixed(2)})`,
     };
   }
   if (chg < -0.25) {
-    // 青绿跌 (#00e5a3)
-    const alpha = 0.12 + (abs / 8) * 0.38;
+    // 翡翠跌 (#0E8F5B)
+    const alpha = 0.10 + (abs / 8) * 0.24;
     return {
-      background: `linear-gradient(155deg, rgba(0, 229, 163, ${alpha.toFixed(2)}), rgba(6, 130, 96, ${(alpha * 0.62).toFixed(2)}))`,
-      borderColor: `rgba(0, 229, 163, ${Math.min(0.82, alpha + 0.2).toFixed(2)})`,
+      background: `linear-gradient(155deg, rgba(14, 143, 91, ${alpha.toFixed(2)}), rgba(14, 143, 91, ${(alpha * 0.45).toFixed(2)}))`,
+      borderColor: `rgba(14, 143, 91, ${Math.min(0.55, alpha + 0.16).toFixed(2)})`,
     };
   }
   return {
-    background: 'rgba(20, 38, 33, 0.72)',
-    borderColor: 'rgba(148, 163, 184, 0.22)',
+    background: '#EFE8D8',
+    borderColor: '#D8D1C3',
   };
 }
 
@@ -82,11 +82,11 @@ export const HeatmapView: React.FC<Props> = ({ items, lang, onJumpToChart }) => 
         </div>
         <div className="heatmap-scale">
           <span className="hm-scale-label down">-5%↓</span>
-          <span className="hm-swatch" style={{ background: 'rgba(0, 229, 163, 0.5)' }} />
-          <span className="hm-swatch" style={{ background: 'rgba(0, 229, 163, 0.22)' }} />
-          <span className="hm-swatch" style={{ background: 'rgba(148, 163, 184, 0.22)' }} />
-          <span className="hm-swatch" style={{ background: 'rgba(255, 59, 92, 0.26)' }} />
-          <span className="hm-swatch" style={{ background: 'rgba(255, 59, 92, 0.56)' }} />
+          <span className="hm-swatch" style={{ background: 'rgba(14, 143, 91, 0.36)' }} />
+          <span className="hm-swatch" style={{ background: 'rgba(14, 143, 91, 0.16)' }} />
+          <span className="hm-swatch" style={{ background: '#EFE8D8' }} />
+          <span className="hm-swatch" style={{ background: 'rgba(217, 56, 41, 0.16)' }} />
+          <span className="hm-swatch" style={{ background: 'rgba(217, 56, 41, 0.36)' }} />
           <span className="hm-scale-label up">+5%↑</span>
         </div>
       </div>

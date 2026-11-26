@@ -1385,14 +1385,14 @@ export function App() {
               className={`vs-btn ${viewMode === 'workbench' ? 'active' : ''}`}
               onClick={() => switchViewMode('workbench')}
             >
-              <span>📊 {lang === 'zh' ? '深度看盘台' : 'Workbench'}</span>
+              <span>{lang === 'zh' ? '深度看盘台' : 'Workbench'}</span>
             </button>
             <button
               type="button"
               className={`vs-btn radar ${viewMode === 'radar' ? 'active' : ''}`}
               onClick={() => switchViewMode('radar')}
             >
-              <span>⚡ {lang === 'zh' ? '量化选股雷达' : 'Quant Radar'}</span>
+              <span>{lang === 'zh' ? '量化选股雷达' : 'Quant Radar'}</span>
               {oppCount > 0 && <span className="vs-badge">{oppCount}</span>}
             </button>
             <button
@@ -1400,7 +1400,7 @@ export function App() {
               className={`vs-btn calendar ${viewMode === 'calendar' ? 'active' : ''}`}
               onClick={() => switchViewMode('calendar')}
             >
-              <span>🛡️ {lang === 'zh' ? '避雷日历' : 'Calendar'}</span>
+              <span>{lang === 'zh' ? '避雷日历' : 'Calendar'}</span>
               {(calendarData?.urgent_48h_count ?? 0) > 0 && (
                 <span className="vs-badge cal">{calendarData?.urgent_48h_count}</span>
               )}
@@ -1410,14 +1410,14 @@ export function App() {
               className={`vs-btn etf-plan ${viewMode === 'etf_plan' ? 'active' : ''}`}
               onClick={() => switchViewMode('etf_plan')}
             >
-              <span>🏦 {lang === 'zh' ? '美股 ETF 计划' : 'ETF Plan'}</span>
+              <span>{lang === 'zh' ? '美股 ETF 计划' : 'ETF Plan'}</span>
             </button>
             <button
               type="button"
               className={`vs-btn calculator ${viewMode === 'calculator' ? 'active' : ''}`}
               onClick={() => switchViewMode('calculator')}
             >
-              <span>🧮 {lang === 'zh' ? '仓位计算' : 'Calc'}</span>
+              <span>{lang === 'zh' ? '仓位计算' : 'Calc'}</span>
             </button>
           </div>
         </div>
@@ -1455,8 +1455,8 @@ export function App() {
               onClick={() => switchViewMode('radar')}
               title="大盘泡沫/抄底温度计"
             >
-              <span>🔥{radarData.temperature.bubble_score}</span>
-              <span>🧲{radarData.temperature.bottom_score}</span>
+              <span>热 {radarData.temperature.bubble_score}</span>
+              <span>底 {radarData.temperature.bottom_score}</span>
             </button>
           </div>
         )}
@@ -1469,7 +1469,7 @@ export function App() {
               onClick={() => setDisplayMenuOpen((v) => !v)}
               title={lang === 'zh' ? '调整界面缩放 (⌘+ / ⌘-) 与窗口分辨率' : 'Zoom & Resolution Settings'}
             >
-              <span>🔍 {uiZoomPct}%</span>
+              <span>{uiZoomPct}%</span>
             </button>
 
             {displayMenuOpen && (
@@ -1568,7 +1568,7 @@ export function App() {
             onClick={() => setDownloadModalOpen(true)}
             title={lang === 'zh' ? '获取 Mac 桌面客户端与 iPhone 独立 App' : 'Download Mac & iOS Apps'}
           >
-            <span>📲 {lang === 'zh' ? '下载App' : 'Apps'}</span>
+            <span>{lang === 'zh' ? '下载 App' : 'Apps'}</span>
           </button>
 
           <button
@@ -1703,7 +1703,7 @@ export function App() {
                   ['all', lang === 'zh' ? '全部' : 'All'],
                   ['crypto', lang === 'zh' ? '₿ 加密' : 'Crypto'],
                   ['us', lang === 'zh' ? '$ 美股' : 'US'],
-                  ['fav', lang === 'zh' ? `⭐ ${favorites.length}` : `Fav ${favorites.length}`],
+                  ['fav', lang === 'zh' ? `自选 ${favorites.length}` : `Fav ${favorites.length}`],
                 ] as ['all' | 'crypto' | 'us' | 'fav', string][]
               ).map(([k, lbl]) => (
                 <button
@@ -1724,10 +1724,10 @@ export function App() {
               {(
                 [
                   ['all', lang === 'zh' ? '全部' : 'All'],
-                  ['resilient_leader', '🛡️抗跌'],
-                  ['golden_pit', '🟢黄金坑'],
-                  ['bear_short_put', '🩸空·Put'],
-                  ['ma_squeeze', '⚡粘合'],
+                  ['resilient_leader', '抗跌'],
+                  ['golden_pit', '黄金坑'],
+                  ['bear_short_put', '空·Put'],
+                  ['ma_squeeze', '粘合'],
                 ] as [typeof sideStrategy, string][]
               ).map(([k, lbl]) => (
                 <button
@@ -1760,7 +1760,7 @@ export function App() {
                 onClick={() => switchViewMode('radar')}
                 title={lang === 'zh' ? '打开全屏量化选股雷达' : 'Open Quant Radar'}
               >
-                ⚡ 雷达
+                雷达
               </button>
             </div>
 
@@ -1963,7 +1963,6 @@ export function App() {
               <div className="sh-price-row">
                 {data?.meta.session_zh && (
                   <span className={`sh-session-pill sess-${data.meta.session || 'closed'}`}>
-                    {data.meta.session === 'pre' ? '🌅 ' : data.meta.session === 'post' ? '🌙 ' : data.meta.session === 'crypto_24h' ? '⚡ ' : data.meta.session === 'regular' ? '🟢 ' : ''}
                     {lang === 'zh' ? data.meta.session_zh : (data.meta.session_en || data.meta.session_zh)}
                   </span>
                 )}
@@ -2018,7 +2017,7 @@ export function App() {
                 }}
                 title={lang === 'zh' ? '开启大小周期双图同屏对比' : 'Dual-Chart Multi-Timeframe'}
               >
-                🪟 {lang === 'zh' ? '双图联动' : 'Dual'}
+                {lang === 'zh' ? '双图联动' : 'Dual'}
               </button>
               <button
                 type="button"
@@ -2030,7 +2029,7 @@ export function App() {
                 }}
                 title={lang === 'zh' ? '价格预警线与均线穿越自动推送 (Telegram/Webhook)' : 'Price & MA Crossover Alerts'}
               >
-                🔔 {lang === 'zh' ? '预警' : 'Alerts'}
+                {lang === 'zh' ? '预警' : 'Alerts'}
                 {(alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length +
                   (maAlertsData?.rules.filter((r) => r.enabled).length ?? 0)) >
                   0 && (
@@ -2046,7 +2045,7 @@ export function App() {
                 onClick={toggleRrTool}
                 title={lang === 'zh' ? 'TradingView 盈亏比尺与 1.5% 仓位计算器' : 'Risk/Reward Position Tool'}
               >
-                📐 {lang === 'zh' ? '盈亏尺' : 'R:R'}
+                {lang === 'zh' ? '盈亏尺' : 'R:R'}
               </button>
               <button
                 type="button"
@@ -2062,7 +2061,7 @@ export function App() {
                 }}
                 title={lang === 'zh' ? '测距尺 (或按住 Shift 直接点击K线两处)' : 'Measure (or Shift+Click)'}
               >
-                📏 {lang === 'zh' ? '测距' : 'Measure'}
+                {lang === 'zh' ? '测距' : 'Measure'}
               </button>
               <button
                 type="button"
@@ -2082,7 +2081,7 @@ export function App() {
                 onClick={() => setPaperOpen((v) => !v)}
                 title={lang === 'zh' ? 'K线回放 / 实时模拟交易练习' : 'Replay Paper Trading'}
               >
-                🎮 {lang === 'zh' ? '模拟练手' : 'Paper'}
+                {lang === 'zh' ? '模拟练手' : 'Paper'}
               </button>
             </div>
           </div>
@@ -2612,7 +2611,7 @@ export function App() {
                 }
                 title="只保留均线、扣抵与交易计划，画面最干净"
               >
-                🎯 {lang === 'zh' ? '简洁趋势' : 'Clean Trend'}
+                {lang === 'zh' ? '简洁趋势' : 'Clean Trend'}
               </button>
               <button
                 type="button"
@@ -2637,7 +2636,7 @@ export function App() {
                 }}
                 title="一键切周线看 EMA20 + MA20 牛市支撑带"
               >
-                🌈 {lang === 'zh' ? '20W牛熊带' : '20W Band'}
+                {lang === 'zh' ? '20W牛熊带' : '20W Band'}
               </button>
               <button
                 type="button"
@@ -2660,7 +2659,7 @@ export function App() {
                 }
                 title="叠加筹码峰VPVR + 机构缺口FVG + 主力扫损吸筹"
               >
-                🏛️ {lang === 'zh' ? '机构筹码' : 'Smart Money'}
+                {lang === 'zh' ? '机构筹码' : 'Smart Money'}
               </button>
               <button
                 type="button"
@@ -2681,7 +2680,7 @@ export function App() {
                 }
                 title="开启缠论笔段中枢 + 背驰三买卖 + 斐波那契"
               >
-                📐 {lang === 'zh' ? '缠论全量' : 'Full ChanLun'}
+                {lang === 'zh' ? '缠论全量' : 'Full ChanLun'}
               </button>
 
               <div className="layers-menu-wrap">
@@ -2690,7 +2689,7 @@ export function App() {
                   className={`layers-popover-btn ${layersMenuOpen ? 'open' : ''}`}
                   onClick={() => setLayersMenuOpen((v) => !v)}
                 >
-                  🎛️ {lang === 'zh' ? '图层' : 'Layers'} (
+                  {lang === 'zh' ? '图层' : 'Layers'} (
                   {Object.values(layers).filter(Boolean).length}/18) {layersMenuOpen ? '▴' : '▾'}
                 </button>
                 {layersMenuOpen && (
@@ -3339,21 +3338,21 @@ export function App() {
               className={`rs-tab ${rightTab === 'trade' ? 'active' : ''}`}
               onClick={() => setRightTab('trade')}
             >
-              🎯 {lang === 'zh' ? '决策' : 'Decision'}
+              {lang === 'zh' ? '决策' : 'Decision'}
             </button>
             <button
               type="button"
               className={`rs-tab ${rightTab === 'structure' ? 'active' : ''}`}
               onClick={() => setRightTab('structure')}
             >
-              📊 {lang === 'zh' ? '期权/结构' : 'Structure'}
+              {lang === 'zh' ? '期权/结构' : 'Structure'}
             </button>
             <button
               type="button"
               className={`rs-tab ${rightTab === 'news' ? 'active' : ''}`}
               onClick={() => setRightTab('news')}
             >
-              📰 {lang === 'zh' ? '快讯' : 'News'}
+              {lang === 'zh' ? '快讯' : 'News'}
               {(macroData?.within_30m_count ?? 0) > 0 && (
                 <span className="rs-tab-badge">{macroData?.within_30m_count}</span>
               )}
