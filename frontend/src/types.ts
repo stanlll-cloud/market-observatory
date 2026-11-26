@@ -490,7 +490,7 @@ export interface RadarResponse {
   ts: number;
 }
 
-export type ViewMode = 'workbench' | 'radar' | 'calendar' | 'etf_plan';
+export type ViewMode = 'workbench' | 'radar' | 'calendar' | 'etf_plan' | 'calculator';
 
 export interface EarningsWarning {
   symbol: string;

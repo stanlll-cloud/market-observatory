@@ -14,6 +14,7 @@ import { ChartPanel } from './components/ChartPanel';
 import { RadarPage } from './components/RadarPage';
 import { CalendarPage } from './components/CalendarPage';
 import { EtfPlanPage } from './components/EtfPlanPage';
+import { CalculatorPage } from './components/CalculatorPage';
 import type {
   AnalyzeResponse,
   CalendarResponse,
@@ -78,6 +79,7 @@ export function App() {
     if (v === 'radar') return 'radar';
     if (v === 'calendar') return 'calendar';
     if (v === 'etf_plan') return 'etf_plan';
+    if (v === 'calculator') return 'calculator';
     return 'workbench';
   });
   const [radarData, setRadarData] = useState<RadarResponse | null>(null);
@@ -558,6 +560,7 @@ export function App() {
       if (mode === 'radar') url.searchParams.set('view', 'radar');
       else if (mode === 'calendar') url.searchParams.set('view', 'calendar');
       else if (mode === 'etf_plan') url.searchParams.set('view', 'etf_plan');
+      else if (mode === 'calculator') url.searchParams.set('view', 'calculator');
       else url.searchParams.delete('view');
       window.history.replaceState({}, '', url.toString());
     } catch {
@@ -1149,6 +1152,14 @@ export function App() {
       },
       {
         kind: 'action',
+        id: 'act:calc',
+        title: '🧮 打开合约仓位与加仓计算器',
+        sub: '以损定量开单、逆势 1.5x/马丁生死线 & 顺势浮盈滚仓推演',
+        badge: '视图 ⌘5',
+        run: () => switchViewMode('calculator'),
+      },
+      {
+        kind: 'action',
         id: 'act:dual',
         title: dualChartMode ? '🪟 关闭双图联动' : '🪟 开启多周期双图联动',
         sub: '左右并排同时看小周期买点与大周期趋势',
@@ -1400,6 +1411,13 @@ export function App() {
               onClick={() => switchViewMode('etf_plan')}
             >
               <span>🏦 {lang === 'zh' ? '美股 ETF 计划' : 'ETF Plan'}</span>
+            </button>
+            <button
+              type="button"
+              className={`vs-btn calculator ${viewMode === 'calculator' ? 'active' : ''}`}
+              onClick={() => switchViewMode('calculator')}
+            >
+              <span>🧮 {lang === 'zh' ? '仓位计算' : 'Calc'}</span>
             </button>
           </div>
         </div>
@@ -1662,6 +1680,15 @@ export function App() {
             switchViewMode('workbench');
             setMobileTab('chart');
           }}
+        />
+      )}
+      {viewMode === 'calculator' && (
+        <CalculatorPage
+          lang={lang}
+          currentMarket={market}
+          currentSymbol={symbol}
+          currentPrice={data?.meta.price || 0}
+          onBackToWorkbench={() => switchViewMode('workbench')}
         />
       )}
       <div
@@ -3851,6 +3878,13 @@ export function App() {
         >
           <span className="mbn-ico">🏦</span>
           <span>{lang === 'zh' ? 'ETF' : 'ETF'}</span>
+        </button>
+        <button
+          className={`mbn-btn ${viewMode === 'calculator' ? 'active' : ''}`}
+          onClick={() => switchViewMode('calculator')}
+        >
+          <span className="mbn-ico">🧮</span>
+          <span>{lang === 'zh' ? '仓位' : 'Calc'}</span>
         </button>
         <button
           className={`mbn-btn ${viewMode === 'workbench' && mobileTab === 'intel' ? 'active' : ''}`}

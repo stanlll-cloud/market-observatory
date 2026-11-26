@@ -298,6 +298,7 @@ final class ObservatoryAppDelegate: NSObject, NSApplicationDelegate, WKNavigatio
         viewMenu.addItem(withTitle: "⚡ 量化选股雷达", action: #selector(goRadar), keyEquivalent: "2")
         viewMenu.addItem(withTitle: "📅 避雷日历", action: #selector(goCalendar), keyEquivalent: "3")
         viewMenu.addItem(withTitle: "🏦 美股 ETF 计划", action: #selector(goEtfPlan), keyEquivalent: "4")
+        viewMenu.addItem(withTitle: "🧮 仓位与加仓计算器", action: #selector(goCalculator), keyEquivalent: "5")
         viewMenu.addItem(withTitle: "🔍 快速搜票 / 切周期 (⌘K)", action: #selector(openCmdK), keyEquivalent: "k")
         viewMenu.addItem(.separator())
         viewMenu.addItem(withTitle: "🔄 刷新当前行情", action: #selector(reloadPage), keyEquivalent: "r")
@@ -356,6 +357,9 @@ final class ObservatoryAppDelegate: NSObject, NSApplicationDelegate, WKNavigatio
     }
     @objc private func goEtfPlan() {
         webView.evaluateJavaScript("if(window.__switchObsView){window.__switchObsView('etf_plan');}else{window.location.href='/?view=etf_plan';}", completionHandler: nil)
+    }
+    @objc private func goCalculator() {
+        webView.evaluateJavaScript("if(window.__switchObsView){window.__switchObsView('calculator');}else{window.location.href='/?view=calculator';}", completionHandler: nil)
     }
     @objc private func openCmdK() {
         webView.evaluateJavaScript("window.__openCmdK && window.__openCmdK();", completionHandler: nil)
