@@ -8,6 +8,8 @@ __pycache__/
 # Logs & OS files
 logs/
 *.log
+.env
+backend/data/
 .DS_Store
 Thumbs.db
 

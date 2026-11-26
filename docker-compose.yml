@@ -1,0 +1,12 @@
+services:
+  market-observatory:
+    build: .
+    container_name: market-observatory
+    ports:
+      - "8766:8766"
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/backend/data
+    restart: unless-stopped

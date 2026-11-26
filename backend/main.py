@@ -15,14 +15,27 @@ from market_data import fetch_market_data, fetch_live_tick, search_symbols, get_
 from structure_engine import analyze_structure, compute_dual_ma
 from macro_intel import fetch_macro_intelligence
 from radar_engine import start_radar_loop, stop_radar_loop, get_radar_snapshot
+from ma_alert_engine import (
+    start_ma_alert_loop,
+    stop_ma_alert_loop,
+    list_ma_alerts as _list_ma_alerts,
+    add_ma_alert as _add_ma_alert,
+    toggle_ma_alert as _toggle_ma_alert,
+    delete_ma_alert as _delete_ma_alert,
+    save_channel_config as _save_alert_channel_config,
+    send_test_notification as _send_test_ma_alert,
+    run_ma_alert_scan_now as _run_ma_alert_scan_now,
+)
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     start_radar_loop()
+    start_ma_alert_loop()
     try:
         yield
     finally:
+        await stop_ma_alert_loop()
         await stop_radar_loop()
 
 
@@ -115,6 +128,51 @@ async def macro_earnings_calendar(force: int = Query(0, ge=0, le=1)):
 @app.get("/api/etf-plan")
 async def us_etf_plan(force: int = Query(0, ge=0, le=1)):
     return await _fetch_etf_plan_data(force=bool(force))
+
+
+@app.get("/api/ma-alerts")
+async def ma_alerts_list():
+    return await _list_ma_alerts()
+
+
+@app.post("/api/ma-alerts")
+async def ma_alerts_create(request: _Request):
+    try:
+        payload = await request.json()
+        return await _add_ma_alert(payload if isinstance(payload, dict) else {})
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+@app.patch("/api/ma-alerts/{rule_id}")
+async def ma_alerts_patch(rule_id: str, request: _Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    enabled = payload.get("enabled") if isinstance(payload, dict) else None
+    return await _toggle_ma_alert(rule_id, enabled=enabled)
+
+
+@app.delete("/api/ma-alerts/{rule_id}")
+async def ma_alerts_delete(rule_id: str):
+    return await _delete_ma_alert(rule_id)
+
+
+@app.post("/api/ma-alerts/config")
+async def ma_alerts_save_config(request: _Request):
+    payload = await request.json()
+    return await _save_alert_channel_config(payload if isinstance(payload, dict) else {})
+
+
+@app.post("/api/ma-alerts/test")
+async def ma_alerts_send_test():
+    return await _send_test_ma_alert()
+
+
+@app.post("/api/ma-alerts/check-now")
+async def ma_alerts_check_now():
+    return await _run_ma_alert_scan_now()
 
 
 def _get_project_root() -> Path:

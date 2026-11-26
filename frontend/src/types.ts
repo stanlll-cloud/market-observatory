@@ -785,3 +785,55 @@ export interface EtfPlanResponse {
   leveraged_timing: Record<'TQQQ' | 'UPRO', Etf3xTiming>;
   etfs: EtfLiveItem[];
 }
+
+export interface MaAlertRule {
+  id: string;
+  market: 'us' | 'crypto';
+  symbol: string;
+  interval: '1h' | '4h' | '1d' | '1w';
+  ma_type: 'ema' | 'sma';
+  period: number;
+  direction: 'cross_above' | 'cross_below' | 'both';
+  offset_pct: number;
+  enabled: boolean;
+  cooldown_min: number;
+  last_side: 'above' | 'below' | null;
+  last_price: number;
+  last_ma: number;
+  last_trigger_line: number;
+  last_dist_pct: number;
+  last_checked_at: string;
+  last_triggered_at: string | null;
+  last_triggered_ts: number;
+  note: string;
+}
+
+export interface MaAlertHistoryItem {
+  id: string;
+  rule_id: string;
+  symbol: string;
+  market: string;
+  interval: string;
+  ma_label: string;
+  crossed: 'above' | 'below';
+  price: number;
+  trigger_line: number;
+  title: string;
+  triggered_at: string;
+  ts: number;
+  pushed_via?: string[];
+}
+
+export interface MaAlertsResponse {
+  rules: MaAlertRule[];
+  history: MaAlertHistoryItem[];
+  last_scan_at: string;
+  channels: {
+    telegram_configured: boolean;
+    telegram_token_masked: string;
+    telegram_chat_id_masked: string;
+    webhook_configured: boolean;
+    webhook_masked: string;
+    poll_sec: number;
+  };
+}

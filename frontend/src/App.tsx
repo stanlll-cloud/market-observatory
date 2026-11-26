@@ -21,6 +21,8 @@ import type {
   EtfPlanResponse,
   LangType,
   LayerToggles,
+  MaAlertRule,
+  MaAlertsResponse,
   MacroIntelResponse,
   MarketType,
   MeasurePoint,
@@ -119,21 +121,24 @@ export function App() {
     plan: true,
     dual_ma: true,
     bull_band: false,
-    vwap: true,
-    vpvr: true,
-    fvg: true,
-    absorption: true,
+    vwap: false,
+    vpvr: false,
+    fvg: false,
+    absorption: false,
     deduct: true,
     compare: false,
-    fib: true,
+    fib: false,
     regime: true,
-    strokes: true,
-    segments: true,
-    centers: true,
-    signals: true,
-    projection: true,
+    strokes: false,
+    segments: false,
+    centers: false,
+    signals: false,
+    projection: false,
     fractals: false,
   });
+
+  const [rightTab, setRightTab] = useState<'trade' | 'structure' | 'news'>('trade');
+  const [layersMenuOpen, setLayersMenuOpen] = useState<boolean>(false);
 
   // Dual MA Config (persisted in localStorage)
   const [maConfig, setMaConfig] = useState<{ type: 'ema' | 'sma'; fast: number; slow: number }>(() => {
@@ -158,9 +163,7 @@ export function App() {
   const [mobileTab, setMobileTab] = useState<'chart' | 'intel' | 'symbols'>('chart');
   const [chartExpanded, setChartExpanded] = useState<boolean>(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState<boolean>(false);
-  const [macroExpanded, setMacroExpanded] = useState<boolean>(
-    () => (typeof window !== 'undefined' ? window.innerWidth > 960 : true)
-  );
+  const [macroExpanded, setMacroExpanded] = useState<boolean>(false);
 
   // Historical Replay State
   const [replayIndex, setReplayIndex] = useState<number>(-1);
@@ -207,6 +210,22 @@ export function App() {
   const [alertToast, setAlertToast] = useState<{ id: string; text: string } | null>(null);
   const alertsRef = useRef<PriceAlertItem[]>(alerts);
   alertsRef.current = alerts;
+
+  // MA Crossover Auto-Push State (Server-backed Telegram / Webhook)
+  const [alertTab, setAlertTab] = useState<'price' | 'ma'>('ma');
+  const [maAlertsData, setMaAlertsData] = useState<MaAlertsResponse | null>(null);
+  const [maAlertInterval, setMaAlertInterval] = useState<'1h' | '4h' | '1d' | '1w'>('1d');
+  const [maAlertType, setMaAlertType] = useState<'ema' | 'sma'>('sma');
+  const [maAlertPeriod, setMaAlertPeriod] = useState<number>(200);
+  const [maAlertDir, setMaAlertDir] = useState<'cross_above' | 'cross_below' | 'both'>('both');
+  const [maAlertOffset, setMaAlertOffset] = useState<string>('0');
+  const [maAlertBusy, setMaAlertBusy] = useState<boolean>(false);
+  const [maAlertMsg, setMaAlertMsg] = useState<string>('');
+  const [channelCfgOpen, setChannelCfgOpen] = useState<boolean>(false);
+  const [tgTokenInput, setTgTokenInput] = useState<string>('');
+  const [tgChatInput, setTgChatInput] = useState<string>('');
+  const [webhookInput, setWebhookInput] = useState<string>('');
+  const lastMaEventIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     try {
@@ -303,6 +322,152 @@ export function App() {
     },
     [playAlertChime]
   );
+
+  const loadMaAlerts = useCallback(
+    async (notifyNew = false) => {
+      try {
+        const res = await fetch('/api/ma-alerts');
+        const json: MaAlertsResponse = await res.json();
+        if (json && Array.isArray(json.rules)) {
+          setMaAlertsData(json);
+          const latest = json.history?.[0];
+          if (latest) {
+            if (notifyNew && lastMaEventIdRef.current && latest.id !== lastMaEventIdRef.current) {
+              playAlertChime();
+              setAlertToast({ id: latest.id, text: latest.title });
+              window.setTimeout(() => {
+                setAlertToast((cur) => (cur?.id === latest.id ? null : cur));
+              }, 7500);
+            }
+            lastMaEventIdRef.current = latest.id;
+          }
+        }
+      } catch {
+        // ignore transient poll errors
+      }
+    },
+    [playAlertChime]
+  );
+
+  useEffect(() => {
+    const t = window.setTimeout(() => loadMaAlerts(false), 1500);
+    const id = window.setInterval(() => loadMaAlerts(true), 60000);
+    return () => {
+      window.clearTimeout(t);
+      window.clearInterval(id);
+    };
+  }, [loadMaAlerts]);
+
+  const handleAddMaRule = async (override?: Partial<{
+    market: 'us' | 'crypto';
+    symbol: string;
+    interval: '1h' | '4h' | '1d' | '1w';
+    ma_type: 'ema' | 'sma';
+    period: number;
+    direction: 'cross_above' | 'cross_below' | 'both';
+    offset_pct: number;
+    note: string;
+  }>) => {
+    setMaAlertBusy(true);
+    setMaAlertMsg('');
+    try {
+      const body = {
+        market: override?.market ?? market,
+        symbol: override?.symbol ?? symbol,
+        interval: override?.interval ?? maAlertInterval,
+        ma_type: override?.ma_type ?? maAlertType,
+        period: override?.period ?? maAlertPeriod,
+        direction: override?.direction ?? maAlertDir,
+        offset_pct: override?.offset_pct ?? (parseFloat(maAlertOffset) || 0),
+        note: override?.note ?? '',
+      };
+      const res = await fetch('/api/ma-alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const dataRes = await res.json();
+      await loadMaAlerts(false);
+      setMaAlertMsg(
+        dataRes?.duplicate
+          ? `已激活现有规则：${body.symbol} ${body.interval.toUpperCase()} ${body.ma_type.toUpperCase()}${body.period}`
+          : `已添加巡检：${body.symbol} ${body.interval.toUpperCase()} ${body.ma_type.toUpperCase()}${body.period}`
+      );
+    } catch {
+      setMaAlertMsg('添加规则失败，请检查后端连接');
+    } finally {
+      setMaAlertBusy(false);
+    }
+  };
+
+  const handleToggleMaRule = async (rule: MaAlertRule) => {
+    await fetch(`/api/ma-alerts/${rule.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: !rule.enabled }),
+    });
+    await loadMaAlerts(false);
+  };
+
+  const handleDeleteMaRule = async (ruleId: string) => {
+    await fetch(`/api/ma-alerts/${ruleId}`, { method: 'DELETE' });
+    await loadMaAlerts(false);
+  };
+
+  const handleScanMaNow = async () => {
+    setMaAlertBusy(true);
+    setMaAlertMsg('正在扫描全部均线穿越规则...');
+    try {
+      const res = await fetch('/api/ma-alerts/check-now', { method: 'POST' });
+      const json = await res.json();
+      await loadMaAlerts(true);
+      setMaAlertMsg(`扫描完成：共 ${json.enabled ?? 0} 条启用规则，触发 ${json.triggered ?? 0} 条`);
+    } catch {
+      setMaAlertMsg('扫描失败');
+    } finally {
+      setMaAlertBusy(false);
+    }
+  };
+
+  const handleTestMaPush = async () => {
+    setMaAlertBusy(true);
+    setMaAlertMsg('正在发送测试推送...');
+    try {
+      const res = await fetch('/api/ma-alerts/test', { method: 'POST' });
+      const json = await res.json();
+      setMaAlertMsg(
+        json.ok
+          ? `✅ 测试推送成功 (${(json.sent_channels || []).join(', ')})`
+          : `⚠️ 尚未配置推送通道或发送失败：${(json.errors || []).join('; ') || '请先配置 Telegram / Webhook'}`
+      );
+    } catch {
+      setMaAlertMsg('测试推送请求异常');
+    } finally {
+      setMaAlertBusy(false);
+    }
+  };
+
+  const handleSaveChannelCfg = async () => {
+    setMaAlertBusy(true);
+    try {
+      const res = await fetch('/api/ma-alerts/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegram_bot_token: tgTokenInput,
+          telegram_chat_id: tgChatInput,
+          webhook_url: webhookInput,
+        }),
+      });
+      const json = await res.json();
+      await loadMaAlerts(false);
+      setTgTokenInput('');
+      setTgChatInput('');
+      setMaAlertMsg(json.ok ? '✅ 推送通道已保存生效' : '保存失败');
+    } finally {
+      setMaAlertBusy(false);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem('obs_favorites', JSON.stringify(favorites));
@@ -1115,6 +1280,7 @@ export function App() {
       if (e.key === 'Escape') {
         if (cmdKOpen) setCmdKOpen(false);
         if (displayMenuOpen) setDisplayMenuOpen(false);
+        if (layersMenuOpen) setLayersMenuOpen(false);
         if (alertsOpen) setAlertsOpen(false);
         setPickAlertMode(false);
         setMeasureMode(false);
@@ -1830,13 +1996,20 @@ export function App() {
               <button
                 type="button"
                 className={`pro-tool-btn alert-btn ${alertsOpen || pickAlertMode ? 'active' : ''}`}
-                onClick={() => setAlertsOpen((v) => !v)}
-                title={lang === 'zh' ? '图表金色价格预警线 (支持点图设置)' : 'Price Alerts'}
+                onClick={() => {
+                  const next = !alertsOpen;
+                  setAlertsOpen(next);
+                  if (next) loadMaAlerts(false);
+                }}
+                title={lang === 'zh' ? '价格预警线与均线穿越自动推送 (Telegram/Webhook)' : 'Price & MA Crossover Alerts'}
               >
                 🔔 {lang === 'zh' ? '预警' : 'Alerts'}
-                {alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length > 0 && (
+                {(alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length +
+                  (maAlertsData?.rules.filter((r) => r.enabled).length ?? 0)) >
+                  0 && (
                   <span className="ptb-badge">
-                    {alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length}
+                    {alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length +
+                      (maAlertsData?.rules.filter((r) => r.enabled).length ?? 0)}
                   </span>
                 )}
               </button>
@@ -1887,75 +2060,373 @@ export function App() {
             </div>
           </div>
 
-          {/* Floating Chart Price Alerts Manager Drawer */}
+          {/* Floating Chart Price Alerts & MA Crossover Push Drawer */}
           {alertsOpen && (
             <div className="alerts-drawer">
-              <div className="ad-row">
-                <span className="ad-title">
-                  🔔 {symbol} {lang === 'zh' ? '价格预警线' : 'Price Alerts'}
-                </span>
-                <select
-                  className="ad-select"
-                  value={alertDirInput}
-                  onChange={(e) => setAlertDirInput(e.target.value as 'above' | 'below')}
+              <div className="ad-tabs">
+                <button
+                  type="button"
+                  className={`ad-tab ${alertTab === 'ma' ? 'active' : ''}`}
+                  onClick={() => setAlertTab('ma')}
                 >
-                  <option value="above">{lang === 'zh' ? '上穿 ≥' : 'Above ≥'}</option>
-                  <option value="below">{lang === 'zh' ? '下破 ≤' : 'Below ≤'}</option>
-                </select>
-                <input
-                  type="number"
-                  step="any"
-                  className="ad-input"
-                  value={alertPriceInput}
-                  onChange={(e) => setAlertPriceInput(e.target.value)}
-                  placeholder={data?.meta.price ? fmtPrice(data.meta.price) : '目标价...'}
-                />
-                <button type="button" className="ad-btn primary" onClick={() => handleAddAlert()}>
-                  {lang === 'zh' ? '➕ 添加金线' : '➕ Add'}
+                  📡 {lang === 'zh' ? '均线穿越自动推送' : 'MA Cross Push'}
+                  {(maAlertsData?.rules.filter((r) => r.enabled).length ?? 0) > 0 && (
+                    <span className="ad-tab-cnt">
+                      {maAlertsData?.rules.filter((r) => r.enabled).length}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
-                  className={`ad-btn pick ${pickAlertMode ? 'active' : ''}`}
-                  onClick={() => {
-                    setPickAlertMode((v) => !v);
-                    setAlertsOpen(false);
-                  }}
+                  className={`ad-tab ${alertTab === 'price' ? 'active' : ''}`}
+                  onClick={() => setAlertTab('price')}
                 >
-                  {pickAlertMode
-                    ? lang === 'zh'
-                      ? '取消点图'
-                      : 'Cancel Pick'
-                    : lang === 'zh'
-                    ? '🎯 点图直接设价'
-                    : '🎯 Click Chart'}
+                  📍 {symbol} {lang === 'zh' ? '价格金线' : 'Price Line'}
+                  {alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length > 0 && (
+                    <span className="ad-tab-cnt">
+                      {alerts.filter((a) => a.active && a.market === market && a.symbol === symbol).length}
+                    </span>
+                  )}
                 </button>
+                <div className="ad-tabs-right">
+                  {maAlertsData?.channels && (
+                    <span
+                      className={`ad-ch-pill ${
+                        maAlertsData.channels.telegram_configured || maAlertsData.channels.webhook_configured
+                          ? 'ok'
+                          : 'warn'
+                      }`}
+                    >
+                      {maAlertsData.channels.telegram_configured
+                        ? `TG 已连 (${maAlertsData.channels.telegram_chat_id_masked})`
+                        : maAlertsData.channels.webhook_configured
+                        ? 'Webhook 已连'
+                        : '仅站内提醒 · 未绑TG'}
+                    </span>
+                  )}
+                  <button type="button" className="ad-close-x" onClick={() => setAlertsOpen(false)}>
+                    ×
+                  </button>
+                </div>
               </div>
-              <div className="ad-list">
-                {alerts.filter((a) => a.market === market && a.symbol === symbol).length === 0 ? (
-                  <span className="ad-empty">
-                    {lang === 'zh'
-                      ? '当前标的暂无预警。输入价格或点「🎯 点图直接设价」后点击K线任意位置。'
-                      : 'No alerts for this symbol yet.'}
-                  </span>
-                ) : (
-                  alerts
-                    .filter((a) => a.market === market && a.symbol === symbol)
-                    .map((al) => (
-                      <div key={al.id} className={`ad-chip ${al.active ? 'active' : 'triggered'}`}>
-                        <span>
-                          {al.direction === 'above' ? '↑ 上穿' : '↓ 下破'} {fmtPrice(al.targetPrice)}
-                          {!al.active ? (lang === 'zh' ? ' (已触发)' : ' (Hit)') : ''}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setAlerts((prev) => prev.filter((x) => x.id !== al.id))}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))
-                )}
-              </div>
+
+              {alertTab === 'price' ? (
+                <>
+                  <div className="ad-row">
+                    <span className="ad-title">
+                      🔔 {symbol} {lang === 'zh' ? '价格预警线' : 'Price Alerts'}
+                    </span>
+                    <select
+                      className="ad-select"
+                      value={alertDirInput}
+                      onChange={(e) => setAlertDirInput(e.target.value as 'above' | 'below')}
+                    >
+                      <option value="above">{lang === 'zh' ? '上穿 ≥' : 'Above ≥'}</option>
+                      <option value="below">{lang === 'zh' ? '下破 ≤' : 'Below ≤'}</option>
+                    </select>
+                    <input
+                      type="number"
+                      step="any"
+                      className="ad-input"
+                      value={alertPriceInput}
+                      onChange={(e) => setAlertPriceInput(e.target.value)}
+                      placeholder={data?.meta.price ? fmtPrice(data.meta.price) : '目标价...'}
+                    />
+                    <button type="button" className="ad-btn primary" onClick={() => handleAddAlert()}>
+                      {lang === 'zh' ? '➕ 添加金线' : '➕ Add'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`ad-btn pick ${pickAlertMode ? 'active' : ''}`}
+                      onClick={() => {
+                        setPickAlertMode((v) => !v);
+                        setAlertsOpen(false);
+                      }}
+                    >
+                      {pickAlertMode
+                        ? lang === 'zh'
+                          ? '取消点图'
+                          : 'Cancel Pick'
+                        : lang === 'zh'
+                        ? '🎯 点图直接设价'
+                        : '🎯 Click Chart'}
+                    </button>
+                  </div>
+                  <div className="ad-list">
+                    {alerts.filter((a) => a.market === market && a.symbol === symbol).length === 0 ? (
+                      <span className="ad-empty">
+                        {lang === 'zh'
+                          ? '当前标的暂无预警。输入价格或点「🎯 点图直接设价」后点击K线任意位置。'
+                          : 'No alerts for this symbol yet.'}
+                      </span>
+                    ) : (
+                      alerts
+                        .filter((a) => a.market === market && a.symbol === symbol)
+                        .map((al) => (
+                          <div key={al.id} className={`ad-chip ${al.active ? 'active' : 'triggered'}`}>
+                            <span>
+                              {al.direction === 'above' ? '↑ 上穿' : '↓ 下破'} {fmtPrice(al.targetPrice)}
+                              {!al.active ? (lang === 'zh' ? ' (已触发)' : ' (Hit)') : ''}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setAlerts((prev) => prev.filter((x) => x.id !== al.id))}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="ma-alert-panel">
+                  <div className="ma-preset-pills">
+                    <span className="map-lbl">一键策略模板:</span>
+                    <button
+                      type="button"
+                      className="map-btn"
+                      disabled={maAlertBusy}
+                      onClick={() =>
+                        handleAddMaRule({
+                          market: 'us',
+                          symbol: 'QQQ',
+                          interval: '1d',
+                          ma_type: 'sma',
+                          period: 200,
+                          direction: 'cross_below',
+                          offset_pct: -2,
+                          note: '3x ETF 硬止损切 SGOV',
+                        })
+                      }
+                    >
+                      + QQQ 破SMA200×0.98
+                    </button>
+                    <button
+                      type="button"
+                      className="map-btn"
+                      disabled={maAlertBusy}
+                      onClick={() =>
+                        handleAddMaRule({
+                          market: 'us',
+                          symbol: 'QQQ',
+                          interval: '1d',
+                          ma_type: 'sma',
+                          period: 200,
+                          direction: 'cross_above',
+                          offset_pct: 3,
+                          note: '3x 右侧开闸',
+                        })
+                      }
+                    >
+                      + QQQ 站SMA200×1.03
+                    </button>
+                    <button
+                      type="button"
+                      className="map-btn"
+                      disabled={maAlertBusy}
+                      onClick={() =>
+                        handleAddMaRule({
+                          market: 'crypto',
+                          symbol: 'BTCUSDT',
+                          interval: '1d',
+                          ma_type: 'ema',
+                          period: 20,
+                          direction: 'both',
+                          offset_pct: 0,
+                          note: 'BTC 日线生命线穿越',
+                        })
+                      }
+                    >
+                      + BTC 穿日线EMA20
+                    </button>
+                    <button
+                      type="button"
+                      className="map-btn"
+                      disabled={maAlertBusy}
+                      onClick={() =>
+                        handleAddMaRule({
+                          market,
+                          symbol,
+                          interval: '1w',
+                          ma_type: 'ema',
+                          period: 20,
+                          direction: 'both',
+                          offset_pct: 0,
+                          note: '20W 牛熊支撑带突破',
+                        })
+                      }
+                    >
+                      + {symbol} 20W牛熊带
+                    </button>
+                  </div>
+
+                  <div className="ad-row">
+                    <span className="ad-sym-pill">{symbol}</span>
+                    <select
+                      className="ad-select"
+                      value={maAlertInterval}
+                      onChange={(e) => setMaAlertInterval(e.target.value as '1h' | '4h' | '1d' | '1w')}
+                    >
+                      <option value="1h">1小时</option>
+                      <option value="4h">4小时</option>
+                      <option value="1d">日线</option>
+                      <option value="1w">周线</option>
+                    </select>
+                    <select
+                      className="ad-select"
+                      value={maAlertType}
+                      onChange={(e) => setMaAlertType(e.target.value as 'ema' | 'sma')}
+                    >
+                      <option value="sma">MA (SMA)</option>
+                      <option value="ema">EMA</option>
+                    </select>
+                    <select
+                      className="ad-select"
+                      value={maAlertPeriod}
+                      onChange={(e) => setMaAlertPeriod(Number(e.target.value) || 20)}
+                    >
+                      <option value={20}>20线</option>
+                      <option value={50}>50线</option>
+                      <option value={60}>60线</option>
+                      <option value={100}>100线</option>
+                      <option value={120}>120线</option>
+                      <option value={200}>200年线</option>
+                    </select>
+                    <select
+                      className="ad-select"
+                      value={maAlertDir}
+                      onChange={(e) =>
+                        setMaAlertDir(e.target.value as 'cross_above' | 'cross_below' | 'both')
+                      }
+                    >
+                      <option value="both">双向穿越</option>
+                      <option value="cross_above">仅上穿突破</option>
+                      <option value="cross_below">仅下破预警</option>
+                    </select>
+                    <input
+                      type="number"
+                      step="0.5"
+                      className="ad-input sm"
+                      value={maAlertOffset}
+                      onChange={(e) => setMaAlertOffset(e.target.value)}
+                      title="偏移% (例如 -2 代表 0.98倍, +3 代表 1.03倍)"
+                      placeholder="偏移%"
+                    />
+                    <button
+                      type="button"
+                      className="ad-btn primary"
+                      disabled={maAlertBusy}
+                      onClick={() => handleAddMaRule()}
+                    >
+                      ➕ 开启自动巡检
+                    </button>
+                    <button
+                      type="button"
+                      className="ad-btn"
+                      disabled={maAlertBusy}
+                      onClick={handleScanMaNow}
+                    >
+                      🔄 立即扫描
+                    </button>
+                    <button
+                      type="button"
+                      className="ad-btn"
+                      disabled={maAlertBusy}
+                      onClick={handleTestMaPush}
+                    >
+                      📨 测试推送
+                    </button>
+                    <button
+                      type="button"
+                      className={`ad-btn ${channelCfgOpen ? 'active' : ''}`}
+                      onClick={() => setChannelCfgOpen((v) => !v)}
+                    >
+                      ⚙️ 通道配置
+                    </button>
+                  </div>
+
+                  {maAlertMsg && <div className="ma-alert-msg">{maAlertMsg}</div>}
+
+                  {channelCfgOpen && (
+                    <div className="ma-ch-cfg">
+                      <input
+                        type="password"
+                        className="ad-input wide"
+                        placeholder="Telegram Bot Token (留空保持现有)"
+                        value={tgTokenInput}
+                        onChange={(e) => setTgTokenInput(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        className="ad-input"
+                        placeholder="Telegram Chat ID"
+                        value={tgChatInput}
+                        onChange={(e) => setTgChatInput(e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        className="ad-input wide"
+                        placeholder="或填写飞书/Discord/Bark Webhook URL"
+                        value={webhookInput}
+                        onChange={(e) => setWebhookInput(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="ad-btn primary"
+                        disabled={maAlertBusy}
+                        onClick={handleSaveChannelCfg}
+                      >
+                        保存推送通道
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="ma-rule-list">
+                    {(maAlertsData?.rules || []).length === 0 ? (
+                      <span className="ad-empty">
+                        暂无均线穿越监控规则。点上方模板一键启用，或用下拉框添加当前标的（后台每{' '}
+                        {maAlertsData?.channels?.poll_sec ?? 180} 秒自动扫描推送）。
+                      </span>
+                    ) : (
+                      (maAlertsData?.rules || []).map((r) => (
+                        <div key={r.id} className={`ma-rule-chip ${r.enabled ? 'on' : 'off'}`}>
+                          <button
+                            type="button"
+                            className="mr-toggle"
+                            onClick={() => handleToggleMaRule(r)}
+                            title={r.enabled ? '点击暂停' : '点击启用'}
+                          >
+                            {r.enabled ? '🟢' : '⏸️'}
+                          </button>
+                          <span className="mr-main">
+                            <b>{r.symbol}</b> {r.interval.toUpperCase()} {r.ma_type.toUpperCase()}
+                            {r.period}
+                            {Math.abs(r.offset_pct) >= 0.01
+                              ? `×${(1 + r.offset_pct / 100).toFixed(2)}`
+                              : ''}{' '}
+                            · {r.direction === 'cross_above' ? '↑上穿' : r.direction === 'cross_below' ? '↓下破' : '⇅双向'}
+                          </span>
+                          {r.last_trigger_line > 0 && (
+                            <span className={`mr-stat ${r.last_dist_pct >= 0 ? 'bull' : 'bear'}`}>
+                              线 {fmtPrice(r.last_trigger_line)} ({r.last_dist_pct >= 0 ? '+' : ''}
+                              {r.last_dist_pct.toFixed(2)}%)
+                            </span>
+                          )}
+                          {r.note && <span className="mr-note">{r.note}</span>}
+                          <button
+                            type="button"
+                            className="mr-del"
+                            onClick={() => handleDeleteMaRule(r.id)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -2082,47 +2553,222 @@ export function App() {
             );
           })()}
 
-          {/* Structure Layer Toggles + Dual MA Config */}
-          <div className="layers-row">
-            <span className="layers-title">
-              {lang === 'zh' ? '结构图层' : 'Layers'}
-            </span>
-            {(
-              [
-                ['macro', lang === 'zh' ? '宏观指引' : 'Macro Guide'],
-                ['dual_ma', lang === 'zh' ? '双均线' : 'Dual MA'],
-                ['bull_band', lang === 'zh' ? '牛熊20带' : '20 Bull Band'],
-                ['vpvr', lang === 'zh' ? '筹码峰VPVR' : 'VPVR'],
-                ['fvg', lang === 'zh' ? '机构缺口FVG' : 'FVG Gaps'],
-                ['absorption', lang === 'zh' ? '主力吸筹' : 'Absorption'],
-                ['deduct', lang === 'zh' ? '均线扣抵' : 'Deduct'],
-                ['compare', lang === 'zh' ? `对比${compareTarget.sym.replace('USDT', '')}` : `vs ${compareTarget.sym}`],
-                ['vwap', lang === 'zh' ? '机构VWAP' : 'VWAP'],
-                ['fib', lang === 'zh' ? '斐波那契' : 'Fibonacci'],
-                ['regime', lang === 'zh' ? '震荡预警' : 'Regime Alert'],
-                ['plan', lang === 'zh' ? '交易计划' : 'Trade Plan'],
-                ['strokes', lang === 'zh' ? '笔' : 'Strokes'],
-                ['segments', lang === 'zh' ? '线段' : 'Segments'],
-                ['centers', lang === 'zh' ? '中枢' : 'Centers'],
-                ['signals', lang === 'zh' ? '历史信号' : 'Signals'],
-                ['projection', lang === 'zh' ? '条件路径' : 'Projection'],
-                ['fractals', lang === 'zh' ? '分型' : 'Fractals'],
-              ] as [keyof LayerToggles, string][]
-            ).map(([key, label]) => (
-              <label
-                key={key}
-                className={`layer-chip ${layers[key] ? 'checked' : ''}`}
+          {/* Clean Single-Row Scene Presets + Layer Popover + Dual MA Config */}
+          <div className="layers-row scene-preset-bar">
+            <div className="scene-presets-left">
+              <button
+                type="button"
+                className={`scene-btn ${
+                  layers.dual_ma && !layers.bull_band && !layers.vpvr && !layers.strokes ? 'active' : ''
+                }`}
+                onClick={() =>
+                  setLayers((p) => ({
+                    ...p,
+                    macro: true,
+                    plan: true,
+                    dual_ma: true,
+                    bull_band: false,
+                    deduct: true,
+                    regime: true,
+                    vwap: false,
+                    vpvr: false,
+                    fvg: false,
+                    absorption: false,
+                    fib: false,
+                    strokes: false,
+                    segments: false,
+                    centers: false,
+                    signals: false,
+                    projection: false,
+                    fractals: false,
+                  }))
+                }
+                title="只保留均线、扣抵与交易计划，画面最干净"
               >
-                <input
-                  type="checkbox"
-                  checked={layers[key]}
-                  onChange={() =>
-                    setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
-                  }
-                />
-                <span>{label}</span>
-              </label>
-            ))}
+                🎯 {lang === 'zh' ? '简洁趋势' : 'Clean Trend'}
+              </button>
+              <button
+                type="button"
+                className={`scene-btn ${interval === '1w' && layers.bull_band ? 'active' : ''}`}
+                onClick={() => {
+                  setIntervalVal('1w');
+                  setLayers((p) => ({
+                    ...p,
+                    macro: true,
+                    regime: true,
+                    bull_band: true,
+                    dual_ma: false,
+                    vpvr: false,
+                    fvg: false,
+                    absorption: false,
+                    strokes: false,
+                    segments: false,
+                    centers: false,
+                    signals: false,
+                    projection: false,
+                  }));
+                }}
+                title="一键切周线看 EMA20 + MA20 牛市支撑带"
+              >
+                🌈 {lang === 'zh' ? '20W牛熊带' : '20W Band'}
+              </button>
+              <button
+                type="button"
+                className={`scene-btn ${layers.vpvr && layers.fvg && layers.absorption ? 'active' : ''}`}
+                onClick={() =>
+                  setLayers((p) => ({
+                    ...p,
+                    macro: true,
+                    dual_ma: true,
+                    bull_band: false,
+                    vpvr: true,
+                    fvg: true,
+                    absorption: true,
+                    vwap: true,
+                    plan: true,
+                    strokes: false,
+                    segments: false,
+                    centers: false,
+                  }))
+                }
+                title="叠加筹码峰VPVR + 机构缺口FVG + 主力扫损吸筹"
+              >
+                🏛️ {lang === 'zh' ? '机构筹码' : 'Smart Money'}
+              </button>
+              <button
+                type="button"
+                className={`scene-btn ${layers.strokes && layers.centers && layers.signals ? 'active' : ''}`}
+                onClick={() =>
+                  setLayers((p) => ({
+                    ...p,
+                    macro: true,
+                    dual_ma: true,
+                    bull_band: false,
+                    strokes: true,
+                    segments: true,
+                    centers: true,
+                    signals: true,
+                    projection: true,
+                    fib: true,
+                  }))
+                }
+                title="开启缠论笔段中枢 + 背驰三买卖 + 斐波那契"
+              >
+                📐 {lang === 'zh' ? '缠论全量' : 'Full ChanLun'}
+              </button>
+
+              <div className="layers-menu-wrap">
+                <button
+                  type="button"
+                  className={`layers-popover-btn ${layersMenuOpen ? 'open' : ''}`}
+                  onClick={() => setLayersMenuOpen((v) => !v)}
+                >
+                  🎛️ {lang === 'zh' ? '图层' : 'Layers'} (
+                  {Object.values(layers).filter(Boolean).length}/18) {layersMenuOpen ? '▴' : '▾'}
+                </button>
+                {layersMenuOpen && (
+                  <div className="layers-popover">
+                    <div className="lp-head">
+                      <span>{lang === 'zh' ? '自定义盘面叠加图层' : 'Custom Chart Layers'}</span>
+                      <div className="lp-actions">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLayers({
+                              macro: true,
+                              plan: true,
+                              dual_ma: true,
+                              bull_band: false,
+                              vwap: false,
+                              vpvr: false,
+                              fvg: false,
+                              absorption: false,
+                              deduct: true,
+                              compare: false,
+                              fib: false,
+                              regime: true,
+                              strokes: false,
+                              segments: false,
+                              centers: false,
+                              signals: false,
+                              projection: false,
+                              fractals: false,
+                            })
+                          }
+                        >
+                          {lang === 'zh' ? '恢复简洁' : 'Clean'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLayers((p) => ({
+                              ...p,
+                              dual_ma: false,
+                              bull_band: false,
+                              vwap: false,
+                              vpvr: false,
+                              fvg: false,
+                              absorption: false,
+                              deduct: false,
+                              compare: false,
+                              fib: false,
+                              regime: false,
+                              plan: false,
+                              strokes: false,
+                              segments: false,
+                              centers: false,
+                              signals: false,
+                              projection: false,
+                              fractals: false,
+                            }))
+                          }
+                        >
+                          {lang === 'zh' ? '仅看裸K' : 'Naked'}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="lp-grid">
+                      {(
+                        [
+                          ['macro', lang === 'zh' ? '宏观指引' : 'Macro Guide'],
+                          ['dual_ma', lang === 'zh' ? '双均线' : 'Dual MA'],
+                          ['bull_band', lang === 'zh' ? '牛熊20带' : '20 Bull Band'],
+                          ['vpvr', lang === 'zh' ? '筹码峰VPVR' : 'VPVR'],
+                          ['fvg', lang === 'zh' ? '机构缺口FVG' : 'FVG Gaps'],
+                          ['absorption', lang === 'zh' ? '主力吸筹' : 'Absorption'],
+                          ['deduct', lang === 'zh' ? '均线扣抵' : 'Deduct'],
+                          ['compare', lang === 'zh' ? `对比${compareTarget.sym.replace('USDT', '')}` : `vs ${compareTarget.sym}`],
+                          ['vwap', lang === 'zh' ? '机构VWAP' : 'VWAP'],
+                          ['fib', lang === 'zh' ? '斐波那契' : 'Fibonacci'],
+                          ['regime', lang === 'zh' ? '震荡预警' : 'Regime Alert'],
+                          ['plan', lang === 'zh' ? '交易计划' : 'Trade Plan'],
+                          ['strokes', lang === 'zh' ? '笔' : 'Strokes'],
+                          ['segments', lang === 'zh' ? '线段' : 'Segments'],
+                          ['centers', lang === 'zh' ? '中枢' : 'Centers'],
+                          ['signals', lang === 'zh' ? '历史信号' : 'Signals'],
+                          ['projection', lang === 'zh' ? '条件路径' : 'Projection'],
+                          ['fractals', lang === 'zh' ? '分型' : 'Fractals'],
+                        ] as [keyof LayerToggles, string][]
+                      ).map(([key, label]) => (
+                        <label
+                          key={key}
+                          className={`layer-chip ${layers[key] ? 'checked' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={layers[key]}
+                            onChange={() =>
+                              setLayers((prev) => ({ ...prev, [key]: !prev[key] }))
+                            }
+                          />
+                          <span>{label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="ma-config-inline">
               <button
@@ -2154,16 +2800,6 @@ export function App() {
                 title="指数牛熊 MA(SMA) 50/200"
               >
                 50/200
-              </button>
-              <button
-                className={`ma-preset bull-band-preset ${interval === '1w' && layers.bull_band ? 'active' : ''}`}
-                onClick={() => {
-                  setIntervalVal('1w');
-                  setLayers((p) => ({ ...p, bull_band: true, dual_ma: false }));
-                }}
-                title="一键切周线叠加 EMA20 + MA20(SMA20) 牛市支撑带"
-              >
-                {lang === 'zh' ? '20W牛熊带' : '20W Band'}
               </button>
               <select
                 value={maConfig.type}
@@ -2267,27 +2903,29 @@ export function App() {
                 </div>
               </div>
 
-              <div className="macro-guidance-box">
-                {macroData.cycle.squeeze_warning_zh && (
-                  <div className="mg-squeeze">
-                    {lang === 'zh'
-                      ? macroData.cycle.squeeze_warning_zh
-                      : macroData.cycle.squeeze_warning_en}
-                  </div>
-                )}
-                <div className="mg-cols">
-                  <div className="mg-wick">
-                    {lang === 'zh'
-                      ? macroData.guidance.wick_warning_zh
-                      : macroData.guidance.wick_warning_en}
-                  </div>
-                  <div className="mg-buy">
-                    {lang === 'zh'
-                      ? macroData.guidance.buy_method_zh
-                      : macroData.guidance.buy_method_en}
+              {macroExpanded && (
+                <div className="macro-guidance-box">
+                  {macroData.cycle.squeeze_warning_zh && (
+                    <div className="mg-squeeze">
+                      {lang === 'zh'
+                        ? macroData.cycle.squeeze_warning_zh
+                        : macroData.cycle.squeeze_warning_en}
+                    </div>
+                  )}
+                  <div className="mg-cols">
+                    <div className="mg-wick">
+                      {lang === 'zh'
+                        ? macroData.guidance.wick_warning_zh
+                        : macroData.guidance.wick_warning_en}
+                    </div>
+                    <div className="mg-buy">
+                      {lang === 'zh'
+                        ? macroData.guidance.buy_method_zh
+                        : macroData.guidance.buy_method_en}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -2666,10 +3304,39 @@ export function App() {
           </div>
         </main>
 
-        {/* Right Quantitative Panel */}
+        {/* Right Quantitative Panel (3-Tab Clean View) */}
         <aside className="right-sidebar">
-          {/* Card 0: 购买建议 & 双均线系统 */}
-          {data?.analysis.buy_advice && (
+          <div className="rs-tabs">
+            <button
+              type="button"
+              className={`rs-tab ${rightTab === 'trade' ? 'active' : ''}`}
+              onClick={() => setRightTab('trade')}
+            >
+              🎯 {lang === 'zh' ? '决策' : 'Decision'}
+            </button>
+            <button
+              type="button"
+              className={`rs-tab ${rightTab === 'structure' ? 'active' : ''}`}
+              onClick={() => setRightTab('structure')}
+            >
+              📊 {lang === 'zh' ? '期权/结构' : 'Structure'}
+            </button>
+            <button
+              type="button"
+              className={`rs-tab ${rightTab === 'news' ? 'active' : ''}`}
+              onClick={() => setRightTab('news')}
+            >
+              📰 {lang === 'zh' ? '快讯' : 'News'}
+              {(macroData?.within_30m_count ?? 0) > 0 && (
+                <span className="rs-tab-badge">{macroData?.within_30m_count}</span>
+              )}
+            </button>
+          </div>
+
+          {rightTab === 'trade' && (
+            <>
+              {/* Card 0: 购买建议 & 双均线系统 */}
+              {data?.analysis.buy_advice && (
             <div className={`panel-card advice-card ${data.analysis.buy_advice.action.toLowerCase()}`}>
               <div className="card-header">
                 <span>{lang === 'zh' ? '购买建议 · 均线共振' : 'Buy Advice · Dual MA'}</span>
@@ -2857,9 +3524,10 @@ export function App() {
               </div>
             </div>
           )}
+            </>
+          )}
 
-          {/* Card 0.5: 期权购买建议 & 买入点推荐 */}
-          {data?.analysis.options_advice && (
+          {rightTab === 'structure' && data?.analysis.options_advice && (
             <div
               className={`panel-card options-card ${data.analysis.options_advice.signal.toLowerCase()}`}
             >
@@ -2937,7 +3605,7 @@ export function App() {
           )}
 
           {/* Card 0.8: 实时大新闻 · 半小时市场动向 */}
-          {macroData && (
+          {rightTab === 'news' && macroData && (
             <div className="panel-card news-card">
               <div className="card-header">
                 <span>{lang === 'zh' ? '实时快讯 · 市场动向' : 'Live Breaking News'}</span>
@@ -3002,8 +3670,10 @@ export function App() {
             </div>
           )}
 
-          {/* Card 1: Multi-factor Bias */}
-          <div className="panel-card">
+          {rightTab === 'structure' && (
+            <>
+              {/* Card 1: Multi-factor Bias */}
+              <div className="panel-card">
             <div className="card-header">
               <span>{lang === 'zh' ? '多空结构倾向' : 'Directional Bias'}</span>
               <span className="card-sub">
@@ -3136,6 +3806,8 @@ export function App() {
               </div>
             )}
           </div>
+            </>
+          )}
         </aside>
         </div>
 

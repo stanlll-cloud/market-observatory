@@ -168,9 +168,9 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({
   const [shiftHeld, setShiftHeld] = useState<boolean>(false);
   const [vpvrNoteCollapsed, setVpvrNoteCollapsed] = useState<boolean>(() => {
     try {
-      return localStorage.getItem('obs_vpvr_note_collapsed') === '1';
+      return localStorage.getItem('obs_vpvr_note_collapsed') !== '0';
     } catch {
-      return false;
+      return true;
     }
   });
 
