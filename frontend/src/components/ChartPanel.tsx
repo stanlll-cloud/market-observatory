@@ -78,6 +78,10 @@ interface ChartPanelProps {
   onClearMeasure?: () => void;
   onToggleLayer?: (key: keyof LayerToggles) => void;
   onOpenIndicators?: () => void;
+  liqOverlay?: {
+    upper?: { price: number; label: string } | null;
+    lower?: { price: number; label: string } | null;
+  } | null;
 }
 
 /** Isolated 1s timer leaf so main K-line ChartPanel NEVER re-renders every second */
@@ -141,6 +145,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
   onClearMeasure,
   onToggleLayer,
   onOpenIndicators,
+  liqOverlay = null,
 }) => {
   const mainContainerRef = useRef<HTMLDivElement>(null);
   const hudCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -1685,7 +1690,31 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
       });
       alertLinesRef.current.push(posLine);
     }
-  }, [data, interval, layers, activePlanSide, alerts, paperPosition, lang]);
+
+    if (liqOverlay?.upper && liqOverlay.upper.price > 0) {
+      const uLine = series.createPriceLine({
+        price: liqOverlay.upper.price,
+        color: '#D93829',
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: liqOverlay.upper.label,
+      });
+      alertLinesRef.current.push(uLine);
+    }
+
+    if (liqOverlay?.lower && liqOverlay.lower.price > 0) {
+      const lLine = series.createPriceLine({
+        price: liqOverlay.lower.price,
+        color: '#0E8F5B',
+        lineWidth: 1,
+        lineStyle: LineStyle.Dashed,
+        axisLabelVisible: true,
+        title: liqOverlay.lower.label,
+      });
+      alertLinesRef.current.push(lLine);
+    }
+  }, [data, interval, layers, activePlanSide, alerts, paperPosition, liqOverlay, lang]);
 
   const handleResetView = () => {
     const mainChart = mainChartRef.current;

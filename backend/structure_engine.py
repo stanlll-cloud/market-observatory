@@ -1374,6 +1374,181 @@ def detect_fvg_zones(candles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return selected
 
 
+def compute_direction_scorecard(
+    candles: List[Dict[str, Any]],
+    ma_type: str = "ema",
+    ma_fast: int = 20,
+    ma_slow: int = 60,
+    horizon: int = 12,
+    precomputed_macd: List[Dict[str, Any]] | None = None,
+) -> Dict[str, Any] | None:
+    """
+    严格无未来函数 12 根 K 线方向胜率成绩单：
+    按均匀历史锚点切片（仅使用 0..i 已收盘数据），计算当时的 4 因子多空得分与均线缠绕状态，
+    对比 i+12 根K线收盘涨跌，并与“过去12根纯动量外推”基线对比超额胜率。
+    """
+    n = len(candles)
+    if n < 85:
+        return None
+
+    closes = [float(c["close"]) for c in candles]
+    ma_fn = _sma if ma_type.lower() == "sma" else _ema
+    fast_vals = ma_fn(closes, max(2, ma_fast))
+    slow_vals = ma_fn(closes, max(3, ma_slow))
+    macd = precomputed_macd if (precomputed_macd and len(precomputed_macd) == n) else compute_macd(candles)
+
+    start = 65
+    end = n - horizon - 1
+    if end <= start:
+        return None
+    step = max(3, (end - start) // 40)
+
+    seen = 0
+    calls = 0
+    abstained = 0
+    hits = 0
+    bull_calls = 0
+    bull_hits = 0
+    bear_calls = 0
+    bear_hits = 0
+    baseline_hits = 0
+    signed_rets: List[float] = []
+    recent_records: List[Dict[str, Any]] = []
+
+    for i in range(start, end + 1, step):
+        seen += 1
+        entry_px = closes[i]
+        exit_px = closes[i + horizon]
+        if entry_px <= 0:
+            abstained += 1
+            continue
+
+        f_v = fast_vals[i]
+        s_v = slow_vals[i]
+        spread_pct = ((f_v - s_v) / s_v * 100.0) if s_v else 0.0
+        tangled = abs(spread_pct) < 0.35
+
+        sub = candles[: i + 1]
+        merged = _merge_containment(sub)
+        fractals = _detect_fractals(merged)
+        strokes = _build_strokes(fractals, sub)
+        segments = _build_segments(strokes)
+        centers = _build_centers(strokes)
+
+        last_center = centers[-1] if centers else None
+        last_seg = segments[-1] if segments else None
+        last_stroke = strokes[-1] if strokes else None
+        last_macd = macd[i]
+
+        center_score = 0
+        if last_center:
+            mid = (last_center["zg"] + last_center["zd"]) / 2.0
+            half = max((last_center["zg"] - last_center["zd"]) / 2.0, mid * 0.005)
+            center_score = int(max(-30, min(30, round((entry_px - mid) / half * 18.0))))
+
+        seg_score = 16 if (last_seg and last_seg["direction"] == "up") else (-16 if last_seg else 0)
+        stroke_score = 14 if (last_stroke and last_stroke["direction"] == "up") else (-14 if last_stroke else 0)
+        macd_score = int(max(-30, min(30, round((last_macd["hist"] / entry_px) * 4000.0))))
+
+        total_score = center_score + seg_score + stroke_score + macd_score
+        bull_pct = int(max(15, min(85, round(50 + total_score * 0.32))))
+
+        if tangled:
+            prediction = "neutral"
+        elif bull_pct >= 56:
+            prediction = "bull"
+        elif bull_pct <= 44:
+            prediction = "bear"
+        else:
+            prediction = "neutral"
+
+        if prediction == "neutral":
+            abstained += 1
+            continue
+
+        raw_ret_pct = (exit_px - entry_px) / entry_px * 100.0
+        if exit_px > entry_px:
+            outcome = "bull"
+        elif exit_px < entry_px:
+            outcome = "bear"
+        else:
+            outcome = "neutral"
+
+        hit = prediction == outcome
+        signed_ret = raw_ret_pct if prediction == "bull" else -raw_ret_pct
+        signed_rets.append(signed_ret)
+
+        calls += 1
+        if hit:
+            hits += 1
+        if prediction == "bull":
+            bull_calls += 1
+            if hit:
+                bull_hits += 1
+        else:
+            bear_calls += 1
+            if hit:
+                bear_hits += 1
+
+        prev_px = closes[i - horizon]
+        baseline_pred = "bull" if entry_px >= prev_px else "bear"
+        if baseline_pred == outcome:
+            baseline_hits += 1
+
+        recent_records.append(
+            {
+                "time": int(candles[i]["time"]),
+                "end_time": int(candles[i + horizon]["time"]),
+                "prediction": prediction,
+                "outcome": outcome,
+                "hit": hit,
+                "entry_price": round(entry_px, 4),
+                "exit_price": round(exit_px, 4),
+                "raw_ret_pct": round(raw_ret_pct, 2),
+                "signed_ret_pct": round(signed_ret, 2),
+                "bull_pct": bull_pct,
+            }
+        )
+
+    win_rate = round((hits / calls * 100.0) if calls else 0.0, 1)
+    bull_win_rate = round((bull_hits / bull_calls * 100.0) if bull_calls else 0.0, 1)
+    bear_win_rate = round((bear_hits / bear_calls * 100.0) if bear_calls else 0.0, 1)
+    baseline_win_rate = round((baseline_hits / calls * 100.0) if calls else 0.0, 1)
+    edge_vs_baseline = round(win_rate - baseline_win_rate, 1)
+    avg_signed_ret = round((sum(signed_rets) / len(signed_rets)) if signed_rets else 0.0, 2)
+
+    if calls >= 10 and win_rate >= 62.0:
+        grade = "A"
+    elif calls >= 10 and win_rate >= 54.0:
+        grade = "B"
+    elif calls >= 6 and win_rate >= 46.0:
+        grade = "C"
+    else:
+        grade = "D"
+
+    return {
+        "horizon": horizon,
+        "seen": seen,
+        "calls": calls,
+        "abstained": abstained,
+        "hits": hits,
+        "win_rate": win_rate,
+        "bull_calls": bull_calls,
+        "bull_hits": bull_hits,
+        "bull_win_rate": bull_win_rate,
+        "bear_calls": bear_calls,
+        "bear_hits": bear_hits,
+        "bear_win_rate": bear_win_rate,
+        "baseline_hits": baseline_hits,
+        "baseline_win_rate": baseline_win_rate,
+        "edge_vs_baseline": edge_vs_baseline,
+        "avg_signed_ret_pct": avg_signed_ret,
+        "grade": grade,
+        "low_sample": calls < 10,
+        "recent_records": recent_records[-8:],
+    }
+
+
 def analyze_structure(
     candles: List[Dict[str, Any]],
     ma_type: str = "ema",
@@ -1418,6 +1593,7 @@ def analyze_structure(
             },
             "plans": None,
             "similar_samples": {"count": 0, "up_pct": 33, "flat_pct": 34, "down_pct": 33, "horizon": 12},
+            "direction_scorecard": None,
         }
 
     macd = compute_macd(candles)
@@ -1476,6 +1652,14 @@ def analyze_structure(
     vwap = compute_vwap(candles, interval)
     absorption = detect_absorption_signals(candles)
     fvg_zones = detect_fvg_zones(candles)
+    direction_scorecard = compute_direction_scorecard(
+        candles,
+        ma_type=ma_type,
+        ma_fast=ma_fast,
+        ma_slow=ma_slow,
+        horizon=12,
+        precomputed_macd=macd,
+    )
 
     return {
         "fractals": [{"index": f["index"], "time": f["time"], "price": round(f["price"], 4), "type": f["type"]} for f in fractals],
@@ -1514,4 +1698,5 @@ def analyze_structure(
         },
         "plans": plans,
         "similar_samples": similar,
+        "direction_scorecard": direction_scorecard,
     }

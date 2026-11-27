@@ -15,6 +15,7 @@ import market_data
 from market_data import (
     BINANCE_KLINES_URLS,
     BINANCE_TICKER_URLS,
+    COMMODITY_CATALOG,
     CRYPTO_CATALOG,
     ET_TZ,
     US_CATALOG,
@@ -668,7 +669,24 @@ async def run_radar_scan_once() -> Dict[str, Any]:
                 return res
             return _per_symbol_cache.get(f"crypto:{sym}")
 
-        all_tasks = [_scan_us(x) for x in US_CATALOG] + [_scan_crypto(x) for x in CRYPTO_CATALOG]
+        async def _scan_commodity(item: Dict[str, str]) -> Optional[Dict[str, Any]]:
+            sym = item["symbol"]
+            async with sem:
+                raw = await _fetch_yahoo_daily_meta(sym, "1y")
+            if raw and len(raw["candles"]) >= 20:
+                p = raw["price"]
+                prev = raw["prev_close"] or p
+                chg = ((p - prev) / prev * 100.0) if prev else 0.0
+                res = _evaluate_symbol_metrics(item, "commodity", p, chg, raw["candles"], 0.0, vix_state)
+                _per_symbol_cache[f"commodity:{sym}"] = res
+                return res
+            return _per_symbol_cache.get(f"commodity:{sym}")
+
+        all_tasks = (
+            [_scan_us(x) for x in US_CATALOG]
+            + [_scan_crypto(x) for x in CRYPTO_CATALOG]
+            + [_scan_commodity(x) for x in COMMODITY_CATALOG]
+        )
         scanned = await asyncio.gather(*all_tasks, return_exceptions=True)
 
         items: List[Dict[str, Any]] = []
@@ -678,7 +696,7 @@ async def run_radar_scan_once() -> Dict[str, Any]:
 
         # Fallback placeholders for any symbol not yet fetched so UI catalog is always complete
         seen_keys = {(x["market"], x["symbol"]) for x in items}
-        for market_key, pool in (("us", US_CATALOG), ("crypto", CRYPTO_CATALOG)):
+        for market_key, pool in (("us", US_CATALOG), ("crypto", CRYPTO_CATALOG), ("commodity", COMMODITY_CATALOG)):
             for x in pool:
                 if (market_key, x["symbol"]) not in seen_keys:
                     items.append({

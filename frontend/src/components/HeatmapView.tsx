@@ -45,8 +45,8 @@ export const HeatmapView: React.FC<Props> = ({ items, lang, onJumpToChart }) => 
     const map = new Map<string, RadarItem[]>();
     for (const item of items) {
       const secName = isZh
-        ? item.sector || (item.market === 'crypto' ? '加密资产' : '美股其他')
-        : item.sector_en || item.sector || (item.market === 'crypto' ? 'Crypto' : 'Other');
+        ? item.sector || (item.market === 'crypto' ? '加密资产' : item.market === 'commodity' ? '大宗商品' : '美股其他')
+        : item.sector_en || item.sector || (item.market === 'crypto' ? 'Crypto' : item.market === 'commodity' ? 'Commodity' : 'Other');
       const list = map.get(secName) || [];
       list.push(item);
       map.set(secName, list);

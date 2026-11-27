@@ -148,7 +148,7 @@ def prime_daily_cache(market: str, symbol: str, klines: List[Dict]) -> None:
     """由后台雷达扫描预热日线缓存，供看盘台与大势锁 0ms 共享。"""
     if not klines:
         return
-    if market == "us":
+    if market in ("us", "commodity"):
         cache.set(f"yh:{symbol}:1d", klines)
     elif market == "crypto":
         cache.set(f"bk:{symbol}:1d", klines)
@@ -541,7 +541,7 @@ async def fetch_market_data(
                     "high": max(last["high"], p),
                     "low": min(last["low"], p),
                 }
-        elif market == "us":
+        elif market in ("us", "commodity"):
             klines_raw, rt = await asyncio.gather(
                 fetch_yahoo_klines(symbol, interval, limit, force=force),
                 fetch_yahoo_realtime_quote(symbol, force=force),
@@ -576,14 +576,21 @@ async def fetch_market_data(
                         "high": max(last["high"], p),
                         "low": min(last["low"], p),
                     }
+                sess = rt["session"]
+                sess_zh = rt["session_zh"]
+                sess_en = rt["session_en"]
+                if market == "commodity" and abs(time.time() - rt.get("latest_ts", 0)) < 1800:
+                    sess = "futures_live"
+                    sess_zh = "期货实时"
+                    sess_en = "Futures Live"
                 ticker = {
                     "symbol": symbol,
                     "price": p,
                     "price_change": rt["price_change"],
                     "price_change_percent": rt["price_change_percent"],
-                    "session": rt["session"],
-                    "session_zh": rt["session_zh"],
-                    "session_en": rt["session_en"],
+                    "session": sess,
+                    "session_zh": sess_zh,
+                    "session_en": sess_en,
                     "source": "yahoo_rt",
                 }
             else:
@@ -663,17 +670,24 @@ async def fetch_live_tick(market: str, symbol: str, interval: str = "1h") -> Dic
                 },
                 "ts": int(time.time() * 1000),
             }
-        elif market == "us":
+        elif market in ("us", "commodity"):
             rt = await fetch_yahoo_realtime_quote(symbol, force=True)
             if not rt.get("price"):
                 return {"error": f"No live quote for {symbol}"}
+            sess = rt["session"]
+            sess_zh = rt["session_zh"]
+            sess_en = rt["session_en"]
+            if market == "commodity" and abs(time.time() - rt.get("latest_ts", 0)) < 1800:
+                sess = "futures_live"
+                sess_zh = "期货实时"
+                sess_en = "Futures Live"
             return {
                 "price": rt["price"],
                 "price_change": rt["price_change"],
                 "price_change_percent": rt["price_change_percent"],
-                "session": rt["session"],
-                "session_zh": rt["session_zh"],
-                "session_en": rt["session_en"],
+                "session": sess,
+                "session_zh": sess_zh,
+                "session_en": sess_en,
                 "candle": None,
                 "ts": int(time.time() * 1000),
             }
@@ -771,9 +785,25 @@ US_CATALOG = [
     {"symbol": "RSP", "name": "标普等权重 RSP", "exchange": "NYSE", "sector": "宽基与对冲ETF", "sector_en": "Index & Hedge", "alias": "rsp 等权 标普 对比 etf"},
 ]
 
+COMMODITY_CATALOG = [
+    {"symbol": "GC=F", "name": "纽约黄金 COMEX Gold", "exchange": "COMEX", "sector": "贵金属", "sector_en": "Precious Metals", "alias": "gold xau xauusd 黄金 金价 现货黄金 comex"},
+    {"symbol": "SI=F", "name": "纽约白银 COMEX Silver", "exchange": "COMEX", "sector": "贵金属", "sector_en": "Precious Metals", "alias": "silver xag xagusd 白银 银价"},
+    {"symbol": "CL=F", "name": "WTI 美原油 Crude Oil", "exchange": "NYMEX", "sector": "能源原油", "sector_en": "Energy", "alias": "oil wti crude usoil 原油 美油 油价"},
+    {"symbol": "BZ=F", "name": "布伦特原油 Brent Oil", "exchange": "ICE", "sector": "能源原油", "sector_en": "Energy", "alias": "brent ukoil 布油 布伦特 原油"},
+    {"symbol": "HG=F", "name": "纽约精铜 COMEX Copper", "exchange": "COMEX", "sector": "工业金属", "sector_en": "Industrial Metals", "alias": "copper 铜 博士铜"},
+    {"symbol": "NG=F", "name": "美国天然气 NatGas", "exchange": "NYMEX", "sector": "能源原油", "sector_en": "Energy", "alias": "natgas gas 天然气"},
+    {"symbol": "PL=F", "name": "纽约铂金 Platinum", "exchange": "NYMEX", "sector": "贵金属", "sector_en": "Precious Metals", "alias": "platinum 铂金"},
+    {"symbol": "DX-Y.NYB", "name": "美元指数 DXY", "exchange": "ICE", "sector": "宏观外汇", "sector_en": "Macro FX", "alias": "dxy usd dollar 美元指数 美元"},
+]
+
 
 async def search_symbols(market: str, query: str = "") -> List[Dict]:
-    pool = CRYPTO_CATALOG if market == "crypto" else US_CATALOG
+    if market == "crypto":
+        pool = CRYPTO_CATALOG
+    elif market == "commodity":
+        pool = COMMODITY_CATALOG
+    else:
+        pool = US_CATALOG
     q = query.strip().lower()
     if not q:
         return [
@@ -815,8 +845,13 @@ async def search_symbols(market: str, query: str = "") -> List[Dict]:
                 "sector_en": "Custom",
             })
 
-    # 美股兜底：如果本地字典结果少于 3 条，实时查 Yahoo Search API
-    if market == "us" and len(matched) < 3:
+    # 美股 / 商品兜底：如果本地字典结果少于 3 条，实时查 Yahoo Search API
+    if market in ("us", "commodity") and len(matched) < 3:
+        allowed_qtypes = (
+            ("FUTURE", "INDEX", "CURRENCY", "ETF")
+            if market == "commodity"
+            else ("EQUITY", "ETF", "INDEX")
+        )
         try:
             ydata = await _http_get_json(
                 "https://query2.finance.yahoo.com/v1/finance/search",
@@ -826,19 +861,19 @@ async def search_symbols(market: str, query: str = "") -> List[Dict]:
             for item in ydata.get("quotes", []):
                 sym = item.get("symbol", "")
                 qtype = item.get("quoteType", "")
-                if not sym or qtype not in ("EQUITY", "ETF", "INDEX"):
+                if not sym or qtype not in allowed_qtypes:
                     continue
                 if any(m["symbol"] == sym for m in matched):
                     continue
                 name = item.get("shortname") or item.get("longname") or sym
-                exch = item.get("exchDisp") or item.get("exchange") or "US"
+                exch = item.get("exchDisp") or item.get("exchange") or ("FUTURES" if market == "commodity" else "US")
                 matched.append({
                     "symbol": sym,
-                    "market": "us",
+                    "market": market,
                     "name": name,
                     "exchange": exch,
-                    "sector": "美股检索",
-                    "sector_en": "US Search",
+                    "sector": "商品检索" if market == "commodity" else "美股检索",
+                    "sector_en": "Commodity Search" if market == "commodity" else "US Search",
                 })
         except Exception:
             pass
@@ -847,7 +882,7 @@ async def search_symbols(market: str, query: str = "") -> List[Dict]:
 
 
 def get_symbol_info(symbol: str) -> Dict[str, str]:
-    for x in CRYPTO_CATALOG + US_CATALOG:
+    for x in CRYPTO_CATALOG + US_CATALOG + COMMODITY_CATALOG:
         if x["symbol"] == symbol:
             return {
                 "name": x["name"],

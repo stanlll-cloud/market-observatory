@@ -17,6 +17,8 @@ import { RadarPage } from './components/RadarPage';
 import { CalendarPage } from './components/CalendarPage';
 import { EtfPlanPage } from './components/EtfPlanPage';
 import { CalculatorPage } from './components/CalculatorPage';
+import { LiquidationCard } from './components/LiquidationCard';
+import { DirectionScorecardCard } from './components/DirectionScorecardCard';
 import type {
   AnalyzeResponse,
   CalendarResponse,
@@ -24,6 +26,7 @@ import type {
   EtfPlanResponse,
   LangType,
   LayerToggles,
+  LiquidationResponse,
   MaAlertRule,
   MaAlertsResponse,
   MacroIntelResponse,
@@ -104,7 +107,7 @@ export function App() {
       ? { w: window.innerWidth, h: window.innerHeight }
       : { w: 1440, h: 900 }
   );
-  const [sideMarketFilter, setSideMarketFilter] = useState<'all' | 'crypto' | 'us' | 'fav'>('all');
+  const [sideMarketFilter, setSideMarketFilter] = useState<'all' | 'crypto' | 'us' | 'commodity' | 'fav'>('all');
   const [sideStrategy, setSideStrategy] = useState<
     'all' | 'resilient_leader' | 'golden_pit' | 'bear_short_put' | 'ma_squeeze'
   >('all');
@@ -131,9 +134,13 @@ export function App() {
 
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [macroData, setMacroData] = useState<MacroIntelResponse | null>(null);
+  const [liqData, setLiqData] = useState<LiquidationResponse | null>(null);
+  const [liqLoading, setLiqLoading] = useState<boolean>(false);
+  const [showLiqOnChart, setShowLiqOnChart] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const analyzeAbortRef = useRef<AbortController | null>(null);
+  const liqAbortRef = useRef<AbortController | null>(null);
   const loadingRef = useRef<boolean>(false);
   loadingRef.current = loading;
 
@@ -525,7 +532,7 @@ export function App() {
   }, [loadMaAlerts]);
 
   const handleAddMaRule = async (override?: Partial<{
-    market: 'us' | 'crypto';
+    market: MarketType;
     symbol: string;
     interval: '1h' | '4h' | '1d' | '1w';
     ma_type: 'ema' | 'sma';
@@ -846,6 +853,8 @@ export function App() {
         ? 'us'
         : sideMarketFilter === 'crypto'
         ? 'crypto'
+        : sideMarketFilter === 'commodity'
+        ? 'commodity'
         : market;
     const timer = window.setTimeout(() => {
       fetch(`/api/symbols?market=${targetMkt}&q=${encodeURIComponent(q)}`)
@@ -928,6 +937,35 @@ export function App() {
     }
   }, []);
 
+  const loadLiquidation = useCallback(async (m: MarketType, sym: string, iv: string, silent = false, force = false) => {
+    if (m !== 'crypto') {
+      liqAbortRef.current?.abort();
+      setLiqData(null);
+      setLiqLoading(false);
+      return;
+    }
+    liqAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    liqAbortRef.current = ctrl;
+    if (!silent) setLiqLoading(true);
+    try {
+      const res = await fetch(
+        `/api/liquidation?symbol=${encodeURIComponent(sym)}&interval=${encodeURIComponent(iv)}${force ? '&force=1' : ''}`,
+        { signal: ctrl.signal }
+      );
+      const json: LiquidationResponse = await res.json();
+      if (!ctrl.signal.aborted && json && typeof json.supported === 'boolean') {
+        setLiqData(json);
+      }
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return;
+    } finally {
+      if (liqAbortRef.current === ctrl) {
+        setLiqLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     loadAnalysis(market, symbol, interval, replayIndex, maConfig, false);
   }, [market, symbol, interval, replayIndex, maConfig, loadAnalysis]);
@@ -935,6 +973,10 @@ export function App() {
   useEffect(() => {
     loadMacro(market, symbol);
   }, [market, symbol, loadMacro]);
+
+  useEffect(() => {
+    loadLiquidation(market, symbol, interval, false, false);
+  }, [market, symbol, interval, loadLiquidation]);
 
   // 2.5s 秒级实时行情 Tick 刷新(仅在看盘台开启，切换到雷达/日历时零功耗暂停!)
   useEffect(() => {
@@ -1004,6 +1046,9 @@ export function App() {
 
     const macroId = window.setInterval(() => {
       loadMacro(market, symbol);
+      if (market === 'crypto') {
+        loadLiquidation(market, symbol, interval, true, false);
+      }
     }, 45000);
 
     return () => {
@@ -1011,7 +1056,7 @@ export function App() {
       window.clearInterval(fullId);
       window.clearInterval(macroId);
     };
-  }, [replayIndex, viewMode, market, symbol, interval, maConfig, loadAnalysis, loadMacro]);
+  }, [replayIndex, viewMode, market, symbol, interval, maConfig, loadAnalysis, loadMacro, loadLiquidation]);
 
   // Dual-Chart Secondary Timeframe Sync Fetcher
   useEffect(() => {
@@ -1035,13 +1080,37 @@ export function App() {
     return () => ctrl.abort();
   }, [dualChartMode, viewMode, market, symbol, secondaryInterval, maConfig]);
 
-  // Benchmark Compare Fetcher (BTC for Crypto, QQQ for US)
+  // Benchmark Compare Fetcher (BTC for Crypto, GC=F/CL=F for Commodity, QQQ for US)
   const compareTarget = useMemo(() => {
     if (market === 'crypto') {
       return { mkt: 'crypto' as const, sym: symbol === 'BTCUSDT' ? 'ETHUSDT' : 'BTCUSDT' };
     }
+    if (market === 'commodity') {
+      return { mkt: 'commodity' as const, sym: symbol === 'GC=F' ? 'CL=F' : 'GC=F' };
+    }
     return { mkt: 'us' as const, sym: symbol === 'QQQ' ? 'SPY' : 'QQQ' };
   }, [market, symbol]);
+
+  const liqOverlay = useMemo(() => {
+    if (market !== 'crypto' || !showLiqOnChart || !liqData?.supported) return null;
+    const up = liqData.upper_clusters?.[0];
+    const dn = liqData.lower_clusters?.[0];
+    if (!up && !dn) return null;
+    return {
+      upper: up
+        ? {
+            price: up.price,
+            label: `${lang === 'zh' ? 'HL空强平' : 'Short Liq'} +${up.dist_pct.toFixed(1)}%`,
+          }
+        : null,
+      lower: dn
+        ? {
+            price: dn.price,
+            label: `${lang === 'zh' ? 'HL多强平' : 'Long Liq'} ${dn.dist_pct.toFixed(1)}%`,
+          }
+        : null,
+    };
+  }, [market, showLiqOnChart, liqData, lang]);
 
   useEffect(() => {
     if (!layers.compare || viewMode !== 'workbench') {
@@ -1166,6 +1235,7 @@ export function App() {
     for (const it of src) {
       if (sideMarketFilter === 'us' && it.market !== 'us') continue;
       if (sideMarketFilter === 'crypto' && it.market !== 'crypto') continue;
+      if (sideMarketFilter === 'commodity' && it.market !== 'commodity') continue;
       if (sideMarketFilter === 'fav' && !favorites.includes(it.symbol)) continue;
       if (it.sector) set.add(it.sector);
     }
@@ -1216,6 +1286,7 @@ export function App() {
     const out = baseItems.filter((it) => {
       if (sideMarketFilter === 'crypto' && it.market !== 'crypto') return false;
       if (sideMarketFilter === 'us' && it.market !== 'us') return false;
+      if (sideMarketFilter === 'commodity' && it.market !== 'commodity') return false;
       if (sideMarketFilter === 'fav' && !favorites.includes(it.symbol)) return false;
 
       if (sideStrategy !== 'all') {
@@ -1422,7 +1493,7 @@ export function App() {
       id: `asset:${it.market}:${it.symbol}`,
       title: `${it.symbol} · ${it.name}`,
       sub: `${it.sector || it.market.toUpperCase()} · ${it.change_pct >= 0 ? '+' : ''}${it.change_pct.toFixed(2)}% · 评分 ${it.radar_score}`,
-      badge: it.market === 'crypto' ? '₿ 加密' : '$ 美股',
+      badge: it.market === 'crypto' ? '₿ 加密' : it.market === 'commodity' ? '🛢️ 商品' : '$ 美股',
       market: it.market,
       symbol: it.symbol,
     }));
@@ -1441,14 +1512,18 @@ export function App() {
     for (const act of actions) {
       if (`${act.title} ${act.sub}`.toLowerCase().includes(q)) entries.push(act);
     }
-    if (entries.length === 0 && /^[a-z0-9.\-]{1,12}$/i.test(q)) {
+    if (entries.length === 0 && /^[a-z0-9.=:\-]{1,14}$/i.test(q)) {
       const upper = q.toUpperCase();
-      const guessedMkt: MarketType = upper.endsWith('USDT') ? 'crypto' : 'us';
+      const guessedMkt: MarketType = upper.endsWith('USDT')
+        ? 'crypto'
+        : upper.endsWith('=F') || upper.startsWith('DX-Y')
+        ? 'commodity'
+        : 'us';
       entries.push({
         kind: 'asset',
         id: `custom:${upper}`,
         title: `直接加载 ${upper}`,
-        sub: `从 ${guessedMkt === 'crypto' ? '币安' : '美股 Yahoo'} 实时拉取 K 线分析`,
+        sub: `从 ${guessedMkt === 'crypto' ? '币安' : guessedMkt === 'commodity' ? 'Yahoo 期货' : '美股 Yahoo'} 实时拉取 K 线分析`,
         badge: '直达',
         market: guessedMkt,
         symbol: upper,
@@ -1531,7 +1606,13 @@ export function App() {
         selectAsset(symbols[0].market, symbols[0].symbol);
       } else {
         selectAsset(
-          sideMarketFilter === 'us' ? 'us' : market,
+          sideMarketFilter === 'us'
+            ? 'us'
+            : sideMarketFilter === 'commodity'
+            ? 'commodity'
+            : sideMarketFilter === 'crypto'
+            ? 'crypto'
+            : market,
           searchQuery.trim().toUpperCase()
         );
       }
@@ -1761,6 +1842,7 @@ export function App() {
               } else {
                 loadAnalysis(market, symbol, interval, replayIndex, maConfig, false, true);
                 loadMacro(market, symbol, true);
+                loadLiquidation(market, symbol, interval, false, true);
                 loadRadar(true);
               }
             }}
@@ -1856,10 +1938,11 @@ export function App() {
               {(
                 [
                   ['all', lang === 'zh' ? '全部' : 'All'],
-                  ['crypto', lang === 'zh' ? '₿ 加密' : 'Crypto'],
-                  ['us', lang === 'zh' ? '$ 美股' : 'US'],
-                  ['fav', lang === 'zh' ? `自选 ${favorites.length}` : `Fav ${favorites.length}`],
-                ] as ['all' | 'crypto' | 'us' | 'fav', string][]
+                  ['crypto', lang === 'zh' ? '加密' : 'Crypto'],
+                  ['us', lang === 'zh' ? '美股' : 'US'],
+                  ['commodity', lang === 'zh' ? '商品' : 'Cmdty'],
+                  ['fav', lang === 'zh' ? `选${favorites.length}` : `★${favorites.length}`],
+                ] as ['all' | 'crypto' | 'us' | 'commodity' | 'fav', string][]
               ).map(([k, lbl]) => (
                 <button
                   key={k}
@@ -2017,7 +2100,7 @@ export function App() {
                       <GripVertical size={12} />
                     </span>
                     <div className="sym-badge">
-                      {item.market === 'crypto' ? '₿' : '$'}
+                      {item.market === 'crypto' ? '₿' : item.market === 'commodity' ? '油' : '$'}
                     </div>
                     <div className="sym-info">
                       <div className="sym-code-row">
@@ -2162,6 +2245,7 @@ export function App() {
                 onClick={() => {
                   loadAnalysis(market, symbol, interval, replayIndex, maConfig, false, true);
                   loadMacro(market, symbol, true);
+                  loadLiquidation(market, symbol, interval, false, true);
                   loadRadar(true);
                 }}
                 disabled={loading}
@@ -2951,6 +3035,7 @@ export function App() {
                     setMeasurePts([]);
                     setMeasureMode(false);
                   }}
+                  liqOverlay={liqOverlay}
                 />
               </div>
             ) : (
@@ -2987,6 +3072,7 @@ export function App() {
                 }}
                 onToggleLayer={toggleLayer}
                 onOpenIndicators={openIndicatorsModal}
+                liqOverlay={liqOverlay}
               />
             )}
             {dualChartMode && (
@@ -3485,6 +3571,17 @@ export function App() {
             </>
           )}
 
+          {rightTab === 'structure' && market === 'crypto' && (
+            <LiquidationCard
+              data={liqData}
+              loading={liqLoading}
+              lang={lang}
+              showOnChart={showLiqOnChart}
+              onToggleChart={() => setShowLiqOnChart((v) => !v)}
+              onRefresh={() => loadLiquidation(market, symbol, interval, false, true)}
+            />
+          )}
+
           {rightTab === 'structure' && data?.analysis.options_advice && (
             <div
               className={`panel-card options-card ${data.analysis.options_advice.signal.toLowerCase()}`}
@@ -3618,6 +3715,12 @@ export function App() {
               })}
             </div>
           </div>
+
+          <DirectionScorecardCard
+            scorecard={data?.analysis.direction_scorecard}
+            interval={interval}
+            lang={lang}
+          />
 
           {/* Card 2: Structure Overview */}
           <div className="panel-card">

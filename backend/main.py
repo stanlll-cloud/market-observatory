@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from market_data import fetch_market_data, fetch_live_tick, search_symbols, get_symbol_info
 from structure_engine import analyze_structure, compute_dual_ma
 from macro_intel import fetch_macro_intelligence
+from liquidation_engine import fetch_hyperliquid_liquidation
 from radar_engine import start_radar_loop, stop_radar_loop, get_radar_snapshot
 from ma_alert_engine import (
     start_ma_alert_loop,
@@ -82,11 +83,20 @@ async def health():
 
 @app.get("/api/symbols")
 async def list_symbols(
-    market: str = Query("crypto", description="crypto | us"),
+    market: str = Query("crypto", description="crypto | us | commodity"),
     q: str = Query("", description="search query"),
 ):
     items = await search_symbols(market, q)
     return {"market": market, "symbols": items}
+
+
+@app.get("/api/liquidation")
+async def hyperliquid_liquidation(
+    symbol: str = Query("BTCUSDT"),
+    interval: str = Query("1h"),
+    force: int = Query(0, ge=0, le=1),
+):
+    return await fetch_hyperliquid_liquidation(symbol=symbol, interval=interval, force=bool(force))
 
 
 @app.get("/api/tick")
@@ -282,7 +292,7 @@ async def analyze(
     # 大周期大势锁自动核验 (Crypto 看 4H, 美股看 1D) — 与主K线并发拉取提速50%
     htf_interval = None
     if replay_index < 0:
-        if market == "crypto" and interval in ("1m", "5m", "15m", "30m", "1h"):
+        if market in ("crypto", "commodity") and interval in ("1m", "5m", "15m", "30m", "1h"):
             htf_interval = "4h"
         elif market == "us" and interval not in ("1d", "1w"):
             htf_interval = "1d"

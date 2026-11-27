@@ -50,6 +50,8 @@ const QUICK_TICKERS: Array<{ market: MarketType; symbol: string }> = [
   { market: 'crypto', symbol: 'SOLUSDT' },
   { market: 'us', symbol: 'NVDA' },
   { market: 'us', symbol: 'QQQ' },
+  { market: 'commodity', symbol: 'GC=F' },
+  { market: 'commodity', symbol: 'CL=F' },
 ];
 
 const WIDENING_STEPS = [0, 6, 14, 24, 36, 48];

@@ -424,7 +424,7 @@ async def list_ma_alerts() -> Dict[str, Any]:
 
 async def add_ma_alert(payload: Dict[str, Any]) -> Dict[str, Any]:
     market = str(payload.get("market") or "us").lower()
-    if market not in ("us", "crypto"):
+    if market not in ("us", "crypto", "commodity"):
         market = "us"
     symbol = str(payload.get("symbol") or "").strip().upper()
     if not symbol:

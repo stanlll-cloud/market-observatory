@@ -14,7 +14,7 @@ interface RadarPageProps {
   onBackToChart: () => void;
 }
 
-type MarketFilter = 'all' | 'us' | 'crypto' | 'fav';
+type MarketFilter = 'all' | 'us' | 'crypto' | 'commodity' | 'fav';
 type StrategyFilter =
   | 'all'
   | 'resilient_leader'
@@ -58,6 +58,7 @@ export const RadarPage: React.FC<RadarPageProps> = React.memo(({
     for (const it of items) {
       if (marketFilter === 'us' && it.market !== 'us') continue;
       if (marketFilter === 'crypto' && it.market !== 'crypto') continue;
+      if (marketFilter === 'commodity' && it.market !== 'commodity') continue;
       if (marketFilter === 'fav' && !favorites.includes(it.symbol)) continue;
       if (it.sector) set.add(it.sector);
     }
@@ -69,6 +70,7 @@ export const RadarPage: React.FC<RadarPageProps> = React.memo(({
     const list = items.filter((it) => {
       if (marketFilter === 'us' && it.market !== 'us') return false;
       if (marketFilter === 'crypto' && it.market !== 'crypto') return false;
+      if (marketFilter === 'commodity' && it.market !== 'commodity') return false;
       if (marketFilter === 'fav' && !favorites.includes(it.symbol)) return false;
 
       if (strategyFilter !== 'all') {
@@ -320,6 +322,7 @@ export const RadarPage: React.FC<RadarPageProps> = React.memo(({
                 ['all', lang === 'zh' ? `全部 (${items.length})` : `All (${items.length})`],
                 ['us', lang === 'zh' ? '🇺🇸 美股·ETF' : '🇺🇸 US'],
                 ['crypto', lang === 'zh' ? '₿ 加密货币' : '₿ Crypto'],
+                ['commodity', lang === 'zh' ? '🛢️ 黄金·原油' : '🛢️ Cmdty'],
                 ['fav', lang === 'zh' ? `⭐ 自选 (${favorites.length})` : `⭐ Fav (${favorites.length})`],
               ] as [MarketFilter, string][]
             ).map(([k, lbl]) => (
@@ -460,7 +463,9 @@ export const RadarPage: React.FC<RadarPageProps> = React.memo(({
               >
                 <div className="rc-top">
                   <div className="rc-sym-block">
-                    <span className="rc-mkt-tag">{it.market === 'crypto' ? '₿' : '$'}</span>
+                    <span className="rc-mkt-tag">
+                      {it.market === 'crypto' ? '₿' : it.market === 'commodity' ? '油金' : '$'}
+                    </span>
                     <div>
                       <div className="rc-sym-line">
                         <b>{it.symbol}</b>

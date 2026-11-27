@@ -1,4 +1,4 @@
-export type MarketType = 'crypto' | 'us';
+export type MarketType = 'crypto' | 'us' | 'commodity';
 export type LangType = 'zh' | 'en';
 
 export interface SymbolItem {
@@ -231,6 +231,88 @@ export interface FvgZone {
   dist_pct: number;
 }
 
+export interface DirectionScoreRecord {
+  time: number;
+  end_time: number;
+  prediction: 'bull' | 'bear';
+  outcome: 'bull' | 'bear' | 'neutral';
+  hit: boolean;
+  entry_price: number;
+  exit_price: number;
+  raw_ret_pct: number;
+  signed_ret_pct: number;
+  bull_pct: number;
+}
+
+export interface DirectionScorecard {
+  horizon: number;
+  seen: number;
+  calls: number;
+  abstained: number;
+  hits: number;
+  win_rate: number;
+  bull_calls: number;
+  bull_hits: number;
+  bull_win_rate: number;
+  bear_calls: number;
+  bear_hits: number;
+  bear_win_rate: number;
+  baseline_hits: number;
+  baseline_win_rate: number;
+  edge_vs_baseline: number;
+  avg_signed_ret_pct: number;
+  grade: 'A' | 'B' | 'C' | 'D';
+  low_sample: boolean;
+  recent_records: DirectionScoreRecord[];
+}
+
+export interface LiquidationBin {
+  price: number;
+  price_low: number;
+  price_high: number;
+  side: 'short_liq' | 'long_liq';
+  liq_usd: number;
+  intensity: number;
+  dist_pct: number;
+  dominant_lev: number;
+}
+
+export interface LiquidationCluster {
+  price: number;
+  liq_usd: number;
+  dist_pct: number;
+  dominant_lev: number;
+  side: 'short_liq' | 'long_liq';
+}
+
+export interface LiquidationResponse {
+  supported: boolean;
+  symbol: string;
+  hl_coin?: string;
+  interval?: string;
+  reason?: string;
+  reason_en?: string;
+  mark_price?: number;
+  oracle_price?: number;
+  open_interest_usd?: number;
+  day_volume_usd?: number;
+  max_leverage?: number;
+  funding_8h_pct?: number;
+  funding_ann_pct?: number;
+  long_ratio?: number;
+  short_ratio?: number;
+  ls_source?: string;
+  upper_total_usd?: number;
+  lower_total_usd?: number;
+  imbalance_pct?: number;
+  upper_clusters: LiquidationCluster[];
+  lower_clusters: LiquidationCluster[];
+  bins: LiquidationBin[];
+  summary_zh?: string;
+  summary_en?: string;
+  updated_ts?: number;
+}
+
 export interface AnalysisData {
   fractals: Fractal[];
   strokes: Stroke[];
@@ -248,6 +330,7 @@ export interface AnalysisData {
   options_advice?: OptionsAdvice | null;
   htf_lock?: HtfLock | null;
   earnings_warning?: EarningsWarning | null;
+  direction_scorecard?: DirectionScorecard | null;
   bias: {
     bull_pct: number;
     bear_pct: number;
@@ -564,7 +647,7 @@ export interface CalendarResponse {
 
 export interface PriceAlertItem {
   id: string;
-  market: 'crypto' | 'us';
+  market: MarketType;
   symbol: string;
   targetPrice: number;
   direction: 'above' | 'below';
@@ -797,7 +880,7 @@ export interface EtfPlanResponse {
 
 export interface MaAlertRule {
   id: string;
-  market: 'us' | 'crypto';
+  market: MarketType;
   symbol: string;
   interval: '1h' | '4h' | '1d' | '1w';
   ma_type: 'ema' | 'sma';
