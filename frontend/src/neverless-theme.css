@@ -1801,6 +1801,14 @@ select:focus {
   box-shadow: inset 0 -2px 0 0 #F05C00 !important;
 }
 
+/* Right Sidebar News: Expand Full Height (No Nested 220px Inner Scroll) */
+.news-list {
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-right: 0 !important;
+  gap: 8px !important;
+}
+
 /* Crisp Warm Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
