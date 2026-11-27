@@ -3,6 +3,7 @@ import {
   Activity,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
   Pause,
   Play,
   RefreshCw,
@@ -109,6 +110,25 @@ export function App() {
     'all' | 'resilient_leader' | 'golden_pit' | 'bear_short_put' | 'ma_squeeze'
   >('all');
   const [sideSector, setSideSector] = useState<string>('all');
+  const [symbolOrder, setSymbolOrder] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('obs_symbol_order_v1');
+      const parsed = saved ? JSON.parse(saved) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem('obs_symbol_order_v1', JSON.stringify(symbolOrder));
+    } catch {
+      // ignore storage errors
+    }
+  }, [symbolOrder]);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [dragOverPos, setDragOverPos] = useState<'above' | 'below'>('above');
 
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [macroData, setMacroData] = useState<MacroIntelResponse | null>(null);
@@ -1263,8 +1283,42 @@ export function App() {
         }
       }
     }
+    if (symbolOrder.length > 0) {
+      const orderMap = new Map(symbolOrder.map((k, idx) => [k, idx]));
+      const indexed = out.map((item, origIdx) => ({
+        item,
+        origIdx,
+        rank: orderMap.get(`${item.market}:${item.symbol}`) ?? Number.MAX_SAFE_INTEGER,
+      }));
+      indexed.sort((a, b) => (a.rank !== b.rank ? a.rank - b.rank : a.origIdx - b.origIdx));
+      return indexed.map((x) => x.item);
+    }
     return out;
-  }, [radarData, symbols, sideMarketFilter, sideStrategy, sideSector, searchQuery, favorites]);
+  }, [radarData, symbols, sideMarketFilter, sideStrategy, sideSector, searchQuery, favorites, symbolOrder]);
+
+  const reorderSideItem = useCallback(
+    (fromKey: string, toKey: string, pos: 'above' | 'below') => {
+      if (!fromKey || !toKey || fromKey === toKey) return;
+      const visKeys = displayedSideItems.map((it) => `${it.market}:${it.symbol}`);
+      setSymbolOrder((prev) => {
+        const base = prev.length ? [...prev] : [...visKeys];
+        for (const k of visKeys) {
+          if (!base.includes(k)) base.push(k);
+        }
+        const fromIdx = base.indexOf(fromKey);
+        if (fromIdx < 0) return base;
+        base.splice(fromIdx, 1);
+        const toIdx = base.indexOf(toKey);
+        if (toIdx < 0) {
+          base.push(fromKey);
+        } else {
+          base.splice(pos === 'below' ? toIdx + 1 : toIdx, 0, fromKey);
+        }
+        return base;
+      });
+    },
+    [displayedSideItems]
+  );
 
   // Cmd+K Quick Search Palette Items + Global ArrowUp/ArrowDown Flipper + Escape
   type CmdKEntry =
@@ -1941,17 +1995,77 @@ export function App() {
               )}
             </div>
 
+            {symbolOrder.length > 0 && (
+              <div className="side-order-bar">
+                <span>{lang === 'zh' ? '已自定义排序' : 'Custom Order'}</span>
+                <button
+                  type="button"
+                  className="side-order-reset"
+                  onClick={() => setSymbolOrder([])}
+                >
+                  {lang === 'zh' ? '恢复默认' : 'Reset'}
+                </button>
+              </div>
+            )}
+
             <div className="symbol-list">
               {displayedSideItems.map((item) => {
                 const isFav = favorites.includes(item.symbol);
                 const isActive = item.symbol === symbol && item.market === market;
                 const isUp = item.change_pct >= 0;
+                const rowKey = `${item.market}:${item.symbol}`;
+                const isDragging = dragKey === rowKey;
+                const isOverAbove = dragOverKey === rowKey && dragOverPos === 'above';
+                const isOverBelow = dragOverKey === rowKey && dragOverPos === 'below';
                 return (
                   <div
-                    key={`${item.market}:${item.symbol}`}
-                    className={`symbol-item ${isActive ? 'active' : ''}`}
+                    key={rowKey}
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', rowKey);
+                      setDragKey(rowKey);
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const pos: 'above' | 'below' =
+                        e.clientY - rect.top < rect.height / 2 ? 'above' : 'below';
+                      if (dragOverKey !== rowKey || dragOverPos !== pos) {
+                        setDragOverKey(rowKey);
+                        setDragOverPos(pos);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = dragKey || e.dataTransfer.getData('text/plain');
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const pos: 'above' | 'below' =
+                        e.clientY - rect.top < rect.height / 2 ? 'above' : 'below';
+                      if (from && from !== rowKey) {
+                        reorderSideItem(from, rowKey, pos);
+                      }
+                      setDragKey(null);
+                      setDragOverKey(null);
+                    }}
+                    onDragEnd={() => {
+                      setDragKey(null);
+                      setDragOverKey(null);
+                    }}
+                    className={`symbol-item ${isActive ? 'active' : ''}${
+                      isDragging ? ' dragging' : ''
+                    }${isOverAbove ? ' drag-over-above' : ''}${
+                      isOverBelow ? ' drag-over-below' : ''
+                    }`}
                     onClick={() => selectAsset(item.market, item.symbol)}
                   >
+                    <span
+                      className="sym-drag-handle"
+                      title={lang === 'zh' ? '按住拖动调整排序' : 'Drag to reorder'}
+                    >
+                      <GripVertical size={12} />
+                    </span>
                     <div className="sym-badge">
                       {item.market === 'crypto' ? '₿' : '$'}
                     </div>
