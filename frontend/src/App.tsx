@@ -90,7 +90,6 @@ export function App() {
   const [calendarLoading, setCalendarLoading] = useState<boolean>(false);
   const [etfPlanData, setEtfPlanData] = useState<EtfPlanResponse | null>(null);
   const [etfPlanLoading, setEtfPlanLoading] = useState<boolean>(false);
-  const [downloadModalOpen, setDownloadModalOpen] = useState<boolean>(false);
   const [displayMenuOpen, setDisplayMenuOpen] = useState<boolean>(false);
   const [uiZoomPct, setUiZoomPct] = useState<number>(() => {
     try {
@@ -324,10 +323,6 @@ export function App() {
   useEffect(() => {
     localStorage.setItem('obs_dual_ma', JSON.stringify(maConfig));
   }, [maConfig]);
-
-  // Auto live-polling (every 5s when not replaying)
-  const [autoLive, setAutoLive] = useState<boolean>(true);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
 
   const [activePlanSide, setActivePlanSide] = useState<'bull' | 'bear'>('bull');
 
@@ -898,7 +893,6 @@ export function App() {
           if (!silent) setErrorMsg(json.error);
         } else {
           setData(json);
-          setLastUpdated(new Date().toLocaleTimeString('zh-CN', { hour12: false }));
           if (!silent) {
             if (json.analysis.buy_advice?.action === 'AVOID') {
               setActivePlanSide('bear');
@@ -945,7 +939,7 @@ export function App() {
 
   // 2.5s 秒级实时行情 Tick 刷新(仅在看盘台开启，切换到雷达/日历时零功耗暂停!)
   useEffect(() => {
-    if (!autoLive || replayIndex >= 0 || viewMode !== 'workbench') return;
+    if (replayIndex >= 0 || viewMode !== 'workbench') return;
 
     let tickBusy = false;
     const tickId = window.setInterval(async () => {
@@ -958,8 +952,6 @@ export function App() {
         const tick = await res.json();
         if (tick.error || !tick.price) return;
         checkPriceAlerts(market, symbol, Number(tick.price));
-        const tsStr = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-        setLastUpdated((prev) => (prev === tsStr ? prev : tsStr));
         setData((prev) => {
           if (
             !prev ||
@@ -1020,7 +1012,7 @@ export function App() {
       window.clearInterval(fullId);
       window.clearInterval(macroId);
     };
-  }, [autoLive, replayIndex, viewMode, market, symbol, interval, maConfig, loadAnalysis, loadMacro]);
+  }, [replayIndex, viewMode, market, symbol, interval, maConfig, loadAnalysis, loadMacro]);
 
   // Dual-Chart Secondary Timeframe Sync Fetcher
   useEffect(() => {
@@ -1505,7 +1497,7 @@ export function App() {
         return;
       }
 
-      if (viewMode !== 'workbench' || cmdKOpen || downloadModalOpen || displayMenuOpen) return;
+      if (viewMode !== 'workbench' || cmdKOpen || displayMenuOpen) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName?.toUpperCase() || '';
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return;
@@ -1530,7 +1522,7 @@ export function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [viewMode, cmdKOpen, downloadModalOpen, displayMenuOpen, alertsOpen, displayedSideItems, symbol, market, selectAsset]);
+  }, [viewMode, cmdKOpen, displayMenuOpen, alertsOpen, displayedSideItems, symbol, market, selectAsset]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchQuery.trim()) {
@@ -1654,15 +1646,6 @@ export function App() {
                 VIX {radarData.vix_futures.vix_spot || '--'}
               </span>
             </button>
-            <button
-              type="button"
-              className="tg-pill temp"
-              onClick={() => switchViewMode('radar')}
-              title="大盘泡沫/抄底温度计"
-            >
-              <span>热 {radarData.temperature.bubble_score}</span>
-              <span>底 {radarData.temperature.bottom_score}</span>
-            </button>
           </div>
         )}
 
@@ -1768,15 +1751,6 @@ export function App() {
           </div>
 
           <button
-            type="button"
-            className="btn-download-app"
-            onClick={() => setDownloadModalOpen(true)}
-            title={lang === 'zh' ? '获取 Mac 桌面客户端与 iPhone 独立 App' : 'Download Mac & iOS Apps'}
-          >
-            <span>{lang === 'zh' ? '下载 App' : 'Apps'}</span>
-          </button>
-
-          <button
             className="btn-refresh"
             onClick={() => {
               if (viewMode === 'radar') {
@@ -1798,29 +1772,6 @@ export function App() {
               className={loading || radarLoading || calendarLoading || etfPlanLoading ? 'spin' : ''}
             />
             <span>{lang === 'zh' ? '刷新行情' : 'Refresh'}</span>
-          </button>
-
-          <button
-            className={`status-badge live-toggle ${
-              isReplaying ? 'replaying' : autoLive ? 'live-on' : ''
-            }`}
-            onClick={() => setAutoLive((v) => !v)}
-            title="Toggle 1.5s Live Tick"
-          >
-            <span className="dot" />
-            <span>
-              {isReplaying
-                ? lang === 'zh'
-                  ? '历史回放中'
-                  : 'Replaying'
-                : autoLive
-                ? lang === 'zh'
-                  ? `秒级实时 ${lastUpdated || ''}`
-                  : `LIVE 1.5s ${lastUpdated || ''}`
-                : lang === 'zh'
-                ? '实时已暂停'
-                : 'Live Paused'}
-            </span>
           </button>
 
           <div className="lang-switch">
@@ -3914,72 +3865,6 @@ export function App() {
         <div className="alert-toast" onClick={() => setAlertToast(null)}>
           <span>🔔 {alertToast.text}</span>
           <button type="button">×</button>
-        </div>
-      )}
-
-      {/* Mac & iPhone App Install / Download Modal */}
-      {downloadModalOpen && (
-        <div className="app-modal-backdrop" onClick={() => setDownloadModalOpen(false)}>
-          <div className="app-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="app-modal-head">
-              <h3>📲 {lang === 'zh' ? '安装「观势」Mac / Windows / iPhone 独立客户端' : 'Install Mac / Windows / iOS Apps'}</h3>
-              <button type="button" onClick={() => setDownloadModalOpen(false)}>
-                ×
-              </button>
-            </div>
-            <div className="app-modal-body">
-              <div className="app-install-block">
-                <div className="aib-title">🪟 Windows 桌面独立客户端 (.exe 免安装单文件版)</div>
-                <p className="aib-desc">
-                  内置完整本地行情与缠论计算引擎，免装 Python / Node，Windows 10/11 双击即开独立桌面看盘窗（支持 Ctrl + / - 缩放）。
-                </p>
-                <a
-                  href="https://github.com/stanlll-cloud/market-observatory/releases/latest/download/MarketObservatory-Win64.exe"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="aib-btn win"
-                >
-                  ⬇️ 下载 MarketObservatory-Win64.exe
-                </a>
-                <div className="aib-tip">
-                  安装提示：直接双击运行即可；首次若遇 Windows SmartScreen 拦截提示，点击「更多信息」→「仍要运行」即可启动。
-                </div>
-              </div>
-
-              <div className="app-install-block">
-                <div className="aib-title">🍎 macOS 桌面原生客户端 (.dmg)</div>
-                <p className="aib-desc">
-                  原生 WKWebView 独立窗口封装，内置本地量化服务，免浏览器标签页干扰，支持 ⌘1 看盘 / ⌘2 雷达 / ⌘3 日历与 ⌘+ / ⌘- 缩放。
-                </p>
-                <a
-                  href="https://github.com/stanlll-cloud/market-observatory/releases/latest/download/MarketObservatory-Mac.dmg"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="aib-btn mac"
-                >
-                  ⬇️ 下载 MarketObservatory-Mac.dmg
-                </a>
-                <div className="aib-tip">
-                  安装提示：打开 DMG 后将「观势 Market Observatory」拖入 Applications；首次运行若提示未公证，右键点 App →「打开」即可放行。
-                </div>
-              </div>
-
-              <div className="app-install-block">
-                <div className="aib-title">📱 iPhone / iPad 全屏独立 App</div>
-                <p className="aib-desc">
-                  支持一键安装全屏桌面 WebClip 描述文件（无 Safari 地址栏、横竖屏自适应、原生 App 图标）。
-                </p>
-                <a href="/api/ios-profile" className="aib-btn ios">
-                  📲 一键安装 iOS 桌面 App (.mobileconfig)
-                </a>
-                <div className="aib-tip">
-                  方式一：点击上方按钮允许下载描述文件 → 打开 iPhone「设置」→「已下载描述文件」→「安装」即可出现在主屏幕。
-                  <br />
-                  方式二：使用 Safari 打开本页 → 点击底部「分享 ⬆️」→「添加到主屏幕」同样永久全屏独立运行。
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 

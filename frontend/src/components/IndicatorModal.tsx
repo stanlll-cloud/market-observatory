@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Check, Search, SlidersHorizontal, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, GripHorizontal, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { LangType, LayerToggles } from '../types';
 
 export type IndicatorPreset = 'clean' | 'bull20w' | 'smart_money' | 'chanlun' | 'naked';
@@ -33,6 +33,8 @@ interface IndicatorModalProps {
   compareSymbol: string;
 }
 
+const PANEL_WIDTH = 420;
+
 export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   open,
   onClose,
@@ -45,15 +47,78 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   compareSymbol,
 }) => {
   const [query, setQuery] = useState('');
+  const [dragging, setDragging] = useState(false);
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => ({
+    x: typeof window !== 'undefined' ? Math.max(16, window.innerWidth - PANEL_WIDTH - 18) : 980,
+    y: 66,
+  }));
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragStateRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    origX: number;
+    origY: number;
+  }>({ active: false, startX: 0, startY: 0, origX: 0, origY: 0 });
 
   useEffect(() => {
     if (!open) return;
+    // Re-clamp on open in case window resized since last drag
+    setPos((prev) => {
+      const w = panelRef.current?.offsetWidth || PANEL_WIDTH;
+      const maxX = Math.max(8, window.innerWidth - w - 8);
+      const maxY = Math.max(54, window.innerHeight - 120);
+      return {
+        x: Math.min(maxX, Math.max(8, prev.x)),
+        y: Math.min(maxY, Math.max(54, prev.y)),
+      };
+    });
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  useEffect(() => {
+    const onPointerMove = (e: PointerEvent) => {
+      const st = dragStateRef.current;
+      if (!st.active) return;
+      const w = panelRef.current?.offsetWidth || PANEL_WIDTH;
+      const h = panelRef.current?.offsetHeight || 480;
+      const maxX = Math.max(8, window.innerWidth - w - 8);
+      const maxY = Math.max(54, window.innerHeight - Math.min(h, 140));
+      const nx = Math.min(maxX, Math.max(8, st.origX + (e.clientX - st.startX)));
+      const ny = Math.min(maxY, Math.max(54, st.origY + (e.clientY - st.startY)));
+      setPos({ x: nx, y: ny });
+    };
+    const onPointerUp = () => {
+      if (!dragStateRef.current.active) return;
+      dragStateRef.current.active = false;
+      setDragging(false);
+    };
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, []);
+
+  const handleHeaderPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    e.preventDefault();
+    dragStateRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: pos.x,
+      origY: pos.y,
+    };
+    setDragging(true);
+  };
 
   const defs = useMemo<IndicatorDef[]>(
     () => [
@@ -62,10 +127,10 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         group: 'trend',
         titleZh: `双均线主轨 (${maConfig.type.toUpperCase()} ${maConfig.fast}/${maConfig.slow})`,
         titleEn: `Dual MA (${maConfig.type.toUpperCase()} ${maConfig.fast}/${maConfig.slow})`,
-        descZh: '自适应快慢趋势线与金叉/死叉信号',
-        descEn: 'Customizable fast/slow moving averages & crosses',
-        color: '#F05C00',
-        keywords: 'ema sma dual ma 双均线 均线 趋势',
+        descZh: '高明度对比：深红20快线 / 亮翠绿60慢线 + 金叉死叉',
+        descEn: 'High-luminance contrast: Deep crimson fast / bright mint slow',
+        color: '#B91C1C',
+        keywords: 'ema sma dual ma 双均线 均线 趋势 20 60',
       },
       {
         key: 'ma5',
@@ -144,7 +209,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: '20-Period Bull Market Support Band',
         descZh: '周线/日线经典牛市支撑云带（自动填充多空云色）',
         descEn: 'Dual 20 EMA + SMA support cloud ribbon',
-        color: '#D93829',
+        color: '#B91C1C',
         keywords: 'bull band 牛熊20带 支撑带',
       },
       {
@@ -164,7 +229,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'Volume Histogram',
         descZh: 'K线底部叠加真实放量/缩量识别',
         descEn: 'Bottom-pane candlestick volume bars',
-        color: '#0E8F5B',
+        color: '#00C47A',
         keywords: 'vol volume 成交量 量能',
       },
       {
@@ -194,7 +259,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'Absorption & Liquidity Sweeps',
         descZh: '放量长影线承接与假跌破扫损箭头标记',
         descEn: 'Volume-spike rejection & stop-hunt signals',
-        color: '#D93829',
+        color: '#B91C1C',
         keywords: 'absorption 吸筹 扫损 派发',
       },
       {
@@ -294,7 +359,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'ChanLun · Centers (ZG/ZD)',
         descZh: '多空筹码拉锯中枢上沿与下沿区间',
         descEn: 'Consolidation center upper/lower bounds',
-        color: '#0E8F5B',
+        color: '#00A866',
         keywords: 'chanlun centers 缠论 中枢',
       },
       {
@@ -304,7 +369,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'ChanLun · Historical Signals',
         descZh: '图上圆点标注历次顶底背驰买点',
         descEn: 'Historical divergence buy/sell markers',
-        color: '#D93829',
+        color: '#B91C1C',
         keywords: 'chanlun signals 背驰 买卖点',
       },
       {
@@ -314,7 +379,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'Conditional Projection Paths',
         descZh: '主/次情景演化虚线轨迹预测',
         descEn: 'Primary/secondary dashed trajectory projections',
-        color: '#0E8F5B',
+        color: '#00A866',
         keywords: 'projection 路径 预测',
       },
       {
@@ -324,7 +389,7 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         titleEn: 'Fractal Arrows',
         descZh: '标注最近 40 个 K 线顶底分型极值点',
         descEn: 'Top/bottom fractal extrema markers',
-        color: '#0E8F5B',
+        color: '#00A866',
         keywords: 'fractals 分型',
       },
     ],
@@ -351,180 +416,190 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
   const isZh = lang === 'zh';
 
   return (
-    <div className="ind-modal-backdrop" onClick={onClose}>
-      <div className="ind-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="ind-modal-head">
-          <div className="ind-head-title">
-            <span className="ind-fx-badge">fx</span>
-            <div>
-              <h3>{isZh ? '指标库 · Indicators' : 'Indicators Library'}</h3>
-              <p>
-                {isZh
-                  ? `点选即刻上屏 · 已开启 ${activeCount} 项指标（本地 0ms 渲染）`
-                  : `Click to toggle on chart · ${activeCount} active (0ms client render)`}
-              </p>
-            </div>
+    <div
+      ref={panelRef}
+      className="ind-float-panel"
+      style={{ left: pos.x, top: pos.y }}
+    >
+      <div
+        className={`ind-modal-head draggable${dragging ? ' dragging' : ''}`}
+        onPointerDown={handleHeaderPointerDown}
+        title={isZh ? '按住标题栏可自由拖动到任意位置，不遮挡看图' : 'Drag header to move freely'}
+      >
+        <div className="ind-head-title">
+          <span className="ind-fx-badge">fx</span>
+          <div>
+            <h3>
+              {isZh ? '指标库 · 可拖动实时预览' : 'Indicators · Draggable'}
+              <span className="ind-drag-hint">
+                <GripHorizontal size={12} /> {isZh ? '拖动窗口' : 'Drag'}
+              </span>
+            </h3>
+            <p>
+              {isZh
+                ? `点选即在左侧K线生效 · 已开 ${activeCount} 项`
+                : `Live preview on chart · ${activeCount} active`}
+            </p>
           </div>
-          <button type="button" className="ind-close-btn" onClick={onClose} aria-label="Close">
-            <X size={16} />
+        </div>
+        <button type="button" className="ind-close-btn" onClick={onClose} aria-label="Close">
+          <X size={16} />
+        </button>
+      </div>
+
+      <div className="ind-search-bar">
+        <Search size={14} className="ind-search-ico" />
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={
+            isZh
+              ? '搜指标：MA5 / MA200 / BOLL / 成交量 / VPVR / 缠论...'
+              : 'Search MA5, MA200, BOLL, Volume, VPVR...'
+          }
+        />
+        {query && (
+          <button type="button" className="ind-search-clear" onClick={() => setQuery('')}>
+            ×
           </button>
-        </div>
+        )}
+      </div>
 
-        <div className="ind-search-bar">
-          <Search size={14} className="ind-search-ico" />
-          <input
-            type="text"
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={
-              isZh
-                ? '搜索指标：MA5 / MA200 / BOLL / 成交量 / VPVR / FVG / MACD / 缠论...'
-                : 'Search MA5, MA200, BOLL, Volume, VPVR, FVG, MACD...'
-            }
-          />
-          {query && (
-            <button type="button" className="ind-search-clear" onClick={() => setQuery('')}>
-              ×
-            </button>
-          )}
-        </div>
+      <div className="ind-preset-row">
+        <span className="ind-preset-lbl">{isZh ? '组合:' : 'Presets:'}</span>
+        {(
+          [
+            ['clean', isZh ? '简洁趋势' : 'Clean'],
+            ['bull20w', isZh ? '20W带' : '20W Band'],
+            ['smart_money', isZh ? '机构筹码' : 'Smart Money'],
+            ['chanlun', isZh ? '缠论全量' : 'ChanLun'],
+            ['naked', isZh ? '纯裸K' : 'Naked'],
+          ] as [IndicatorPreset, string][]
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className="ind-preset-btn"
+            onClick={() => onApplyPreset(id)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
 
-        <div className="ind-preset-row">
-          <span className="ind-preset-lbl">{isZh ? '常用组合:' : 'Presets:'}</span>
-          {(
-            [
-              ['clean', isZh ? '简洁趋势' : 'Clean Trend'],
-              ['bull20w', isZh ? '20W 牛熊带' : '20W Bull Band'],
-              ['smart_money', isZh ? '机构筹码' : 'Smart Money'],
-              ['chanlun', isZh ? '缠论全量' : 'Full ChanLun'],
-              ['naked', isZh ? '纯裸 K 线' : 'Naked Chart'],
-            ] as [IndicatorPreset, string][]
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              className="ind-preset-btn"
-              onClick={() => onApplyPreset(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        <div className="ind-body-scroll">
-          {groups.map((grp) => {
-            const list = filtered.filter((d) => d.group === grp.id);
-            if (!list.length) return null;
-            return (
-              <section key={grp.id} className="ind-group">
-                <div className="ind-group-title">{isZh ? grp.labelZh : grp.labelEn}</div>
-                <div className="ind-list">
-                  {list.map((item) => {
-                    const checked = layers[item.key];
-                    return (
-                      <div key={item.key} className={`ind-item-wrap ${checked ? 'active' : ''}`}>
-                        <button
-                          type="button"
-                          className="ind-row"
-                          onClick={() => onToggleLayer(item.key)}
-                        >
-                          <span className="ind-dot" style={{ background: item.color }} />
-                          <div className="ind-row-main">
-                            <div className="ind-row-title">
-                              {isZh ? item.titleZh : item.titleEn}
-                            </div>
-                            <div className="ind-row-desc">
-                              {isZh ? item.descZh : item.descEn}
-                            </div>
+      <div className="ind-body-scroll">
+        {groups.map((grp) => {
+          const list = filtered.filter((d) => d.group === grp.id);
+          if (!list.length) return null;
+          return (
+            <section key={grp.id} className="ind-group">
+              <div className="ind-group-title">{isZh ? grp.labelZh : grp.labelEn}</div>
+              <div className="ind-list">
+                {list.map((item) => {
+                  const checked = layers[item.key];
+                  return (
+                    <div key={item.key} className={`ind-item-wrap ${checked ? 'active' : ''}`}>
+                      <button
+                        type="button"
+                        className="ind-row"
+                        onClick={() => onToggleLayer(item.key)}
+                      >
+                        <span className="ind-dot" style={{ background: item.color }} />
+                        <div className="ind-row-main">
+                          <div className="ind-row-title">
+                            {isZh ? item.titleZh : item.titleEn}
                           </div>
-                          <span className={`ind-toggle-pill ${checked ? 'on' : ''}`}>
-                            {checked ? (
-                              <>
-                                <Check size={12} />
-                                {isZh ? '已添加' : 'Added'}
-                              </>
-                            ) : isZh ? (
-                              '+ 添加'
-                            ) : (
-                              '+ Add'
-                            )}
+                          <div className="ind-row-desc">
+                            {isZh ? item.descZh : item.descEn}
+                          </div>
+                        </div>
+                        <span className={`ind-toggle-pill ${checked ? 'on' : ''}`}>
+                          {checked ? (
+                            <>
+                              <Check size={12} />
+                              {isZh ? '已开' : 'On'}
+                            </>
+                          ) : isZh ? (
+                            '+ 加线'
+                          ) : (
+                            '+ Add'
+                          )}
+                        </span>
+                      </button>
+
+                      {item.key === 'dual_ma' && checked && (
+                        <div className="ind-ma-inline">
+                          <span className="imi-lbl">
+                            <SlidersHorizontal size={12} /> {isZh ? '参数:' : 'Params:'}
                           </span>
-                        </button>
-
-                        {item.key === 'dual_ma' && checked && (
-                          <div className="ind-ma-inline">
-                            <span className="imi-lbl">
-                              <SlidersHorizontal size={12} /> {isZh ? '参数:' : 'Params:'}
-                            </span>
-                            <button
-                              type="button"
-                              className={`imi-preset ${maConfig.type === 'ema' && maConfig.fast === 20 && maConfig.slow === 60 ? 'active' : ''}`}
-                              onClick={() => onChangeMaConfig({ type: 'ema', fast: 20, slow: 60 })}
-                            >
-                              EMA 20/60
-                            </button>
-                            <button
-                              type="button"
-                              className={`imi-preset ${maConfig.type === 'ema' && maConfig.fast === 10 && maConfig.slow === 20 ? 'active' : ''}`}
-                              onClick={() => onChangeMaConfig({ type: 'ema', fast: 10, slow: 20 })}
-                            >
-                              EMA 10/20
-                            </button>
-                            <button
-                              type="button"
-                              className={`imi-preset ${maConfig.type === 'sma' && maConfig.fast === 50 && maConfig.slow === 200 ? 'active' : ''}`}
-                              onClick={() => onChangeMaConfig({ type: 'sma', fast: 50, slow: 200 })}
-                            >
-                              SMA 50/200
-                            </button>
-                            <select
-                              value={maConfig.type}
-                              onChange={(e) =>
-                                onChangeMaConfig({
-                                  ...maConfig,
-                                  type: e.target.value as 'ema' | 'sma',
-                                })
-                              }
-                            >
-                              <option value="ema">EMA</option>
-                              <option value="sma">SMA</option>
-                            </select>
-                            <input
-                              type="number"
-                              min={2}
-                              max={200}
-                              value={maConfig.fast}
-                              onChange={(e) =>
-                                onChangeMaConfig({
-                                  ...maConfig,
-                                  fast: Math.max(2, Math.min(200, Number(e.target.value) || 20)),
-                                })
-                              }
-                            />
-                            <span>/</span>
-                            <input
-                              type="number"
-                              min={3}
-                              max={400}
-                              value={maConfig.slow}
-                              onChange={(e) =>
-                                onChangeMaConfig({
-                                  ...maConfig,
-                                  slow: Math.max(3, Math.min(400, Number(e.target.value) || 60)),
-                                })
-                              }
-                            />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+                          <button
+                            type="button"
+                            className={`imi-preset ${maConfig.type === 'ema' && maConfig.fast === 20 && maConfig.slow === 60 ? 'active' : ''}`}
+                            onClick={() => onChangeMaConfig({ type: 'ema', fast: 20, slow: 60 })}
+                          >
+                            20/60
+                          </button>
+                          <button
+                            type="button"
+                            className={`imi-preset ${maConfig.type === 'ema' && maConfig.fast === 10 && maConfig.slow === 20 ? 'active' : ''}`}
+                            onClick={() => onChangeMaConfig({ type: 'ema', fast: 10, slow: 20 })}
+                          >
+                            10/20
+                          </button>
+                          <button
+                            type="button"
+                            className={`imi-preset ${maConfig.type === 'sma' && maConfig.fast === 50 && maConfig.slow === 200 ? 'active' : ''}`}
+                            onClick={() => onChangeMaConfig({ type: 'sma', fast: 50, slow: 200 })}
+                          >
+                            50/200
+                          </button>
+                          <select
+                            value={maConfig.type}
+                            onChange={(e) =>
+                              onChangeMaConfig({
+                                ...maConfig,
+                                type: e.target.value as 'ema' | 'sma',
+                              })
+                            }
+                          >
+                            <option value="ema">EMA</option>
+                            <option value="sma">SMA</option>
+                          </select>
+                          <input
+                            type="number"
+                            min={2}
+                            max={200}
+                            value={maConfig.fast}
+                            onChange={(e) =>
+                              onChangeMaConfig({
+                                ...maConfig,
+                                fast: Math.max(2, Math.min(200, Number(e.target.value) || 20)),
+                              })
+                            }
+                          />
+                          <span>/</span>
+                          <input
+                            type="number"
+                            min={3}
+                            max={400}
+                            value={maConfig.slow}
+                            onChange={(e) =>
+                              onChangeMaConfig({
+                                ...maConfig,
+                                slow: Math.max(3, Math.min(400, Number(e.target.value) || 60)),
+                              })
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );

@@ -517,19 +517,19 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
         data.candles.map((c) => ({
           time: c.time as UTCTimestamp,
           value: c.volume || 0,
-          color: c.close >= c.open ? 'rgba(217, 56, 41, 0.28)' : 'rgba(14, 143, 91, 0.28)',
+          color: c.close >= c.open ? 'rgba(185, 28, 28, 0.28)' : 'rgba(0, 196, 122, 0.34)',
         }))
       );
     }
 
-    // 1. Candlesticks (Neverless editorial: 涨=#D93829, 跌=#0E8F5B)
+    // 1. Candlesticks (色弱友好高明度分离：深红涨 #B91C1C / 亮翠绿跌 #00C47A)
     const candleSeries = mainChart.addSeries(CandlestickSeries, {
-      upColor: '#D93829',
-      downColor: '#0E8F5B',
-      borderUpColor: '#D93829',
-      borderDownColor: '#0E8F5B',
-      wickUpColor: '#D93829',
-      wickDownColor: '#0E8F5B',
+      upColor: '#B91C1C',
+      downColor: '#00C47A',
+      borderUpColor: '#B91C1C',
+      borderDownColor: '#00C47A',
+      wickUpColor: '#B91C1C',
+      wickDownColor: '#00C47A',
     });
     candleSeriesRef.current = candleSeries;
 
@@ -604,10 +604,10 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
       }
     }
 
-    // 1.5 Dual Moving Average (高对比清晰：快线=黑曜墨 #141413, 慢线=爱马仕橙 #F05C00)
+    // 1.5 Dual Moving Average (色弱友好高明度差异：快线=深暗红 #B91C1C 2px, 慢线=亮翠绿 #00C878 3px)
     if (layers.dual_ma && data.analysis.dual_ma && data.analysis.dual_ma.fast_line.length > 0) {
       const fastSeries = mainChart.addSeries(LineSeries, {
-        color: '#141413',
+        color: '#B91C1C',
         lineWidth: 2,
         priceLineVisible: false,
         lastValueVisible: true,
@@ -621,8 +621,8 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
       );
 
       const slowSeries = mainChart.addSeries(LineSeries, {
-        color: '#F05C00',
-        lineWidth: 2,
+        color: '#00C878',
+        lineWidth: 3,
         priceLineVisible: false,
         lastValueVisible: true,
         crosshairMarkerVisible: true,
@@ -900,7 +900,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cF.time as UTCTimestamp,
           position: 'aboveBar',
-          color: '#141413',
+          color: '#B91C1C',
           shape: 'arrowDown',
           text: `${fastP}扣(${isLow ? '低' : '高'})`,
           size: 1.0,
@@ -913,7 +913,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cS.time as UTCTimestamp,
           position: 'belowBar',
-          color: '#F05C00',
+          color: '#00A866',
           shape: 'arrowUp',
           text: `${slowP}扣(${isLowS ? '低' : '高'})`,
           size: 1.0,
@@ -1691,12 +1691,13 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
   const lastCandle = data?.candles.length ? data.candles[data.candles.length - 1] : null;
   const isCrosshairPick = pickAlertMode || !!rrTool?.pickField || measureMode || shiftHeld;
 
-  const activeChips: Array<{ key: keyof LayerToggles; label: string; color: string }> = [];
+  const activeChips: Array<{ key: keyof LayerToggles; label: string; color: string; color2?: string }> = [];
   if (layers.dual_ma && data?.analysis.dual_ma) {
     activeChips.push({
       key: 'dual_ma',
       label: `${data.analysis.dual_ma.ma_type.toUpperCase()} ${data.analysis.dual_ma.fast_period}/${data.analysis.dual_ma.slow_period}`,
-      color: '#F05C00',
+      color: '#B91C1C',
+      color2: '#00C878',
     });
   }
   if (layers.ma5) activeChips.push({ key: 'ma5', label: 'MA5', color: '#2563EB' });
@@ -1811,6 +1812,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
             {activeChips.map((ch) => (
               <span key={ch.key} className="cip-chip">
                 <i className="cip-dot" style={{ background: ch.color }} />
+                {ch.color2 && <i className="cip-dot" style={{ background: ch.color2 }} />}
                 <span>{ch.label}</span>
                 {onToggleLayer && (
                   <button

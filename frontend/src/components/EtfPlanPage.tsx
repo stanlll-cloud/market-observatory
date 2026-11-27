@@ -186,12 +186,12 @@ export const EtfPlanPage = memo(function EtfPlanPage({
     chartRef.current = chart;
 
     const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#D93829',
-      downColor: '#0E8F5B',
-      borderUpColor: '#D93829',
-      borderDownColor: '#0E8F5B',
-      wickUpColor: '#D93829',
-      wickDownColor: '#0E8F5B',
+      upColor: '#B91C1C',
+      downColor: '#00C47A',
+      borderUpColor: '#B91C1C',
+      borderDownColor: '#00C47A',
+      wickUpColor: '#B91C1C',
+      wickDownColor: '#00C47A',
     });
 
     candleSeries.setData(
