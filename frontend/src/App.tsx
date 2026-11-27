@@ -131,7 +131,6 @@ export function App() {
 
   const [data, setData] = useState<AnalyzeResponse | null>(null);
   const [macroData, setMacroData] = useState<MacroIntelResponse | null>(null);
-  const [newsFilter, setNewsFilter] = useState<'all' | '30m'>('all');
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const analyzeAbortRef = useRef<AbortController | null>(null);
@@ -185,7 +184,7 @@ export function App() {
     }
   }, [layers]);
 
-  const [rightTab, setRightTab] = useState<'trade' | 'structure' | 'news'>('trade');
+  const [rightTab, setRightTab] = useState<'trade' | 'structure'>('trade');
   const [indicatorModalOpen, setIndicatorModalOpen] = useState<boolean>(false);
 
   const toggleLayer = useCallback((key: keyof LayerToggles) => {
@@ -2130,10 +2129,7 @@ export function App() {
                   setMobileTab('intel');
                 }}
               >
-                {lang === 'zh' ? '建议·快讯' : 'Intel'}
-                {macroData && macroData.within_30m_count > 0 && (
-                  <span className="ls-badge">{macroData.within_30m_count}</span>
-                )}
+                {lang === 'zh' ? '建议' : 'Intel'}
               </button>
               <button
                 className={mobileTab === 'symbols' ? 'active' : ''}
@@ -3058,7 +3054,7 @@ export function App() {
                 </span>
               )}
               <span className="mqa-link">
-                {lang === 'zh' ? '查看详情·快讯 ›' : 'Details & News ›'}
+                {lang === 'zh' ? '查看详情 ›' : 'Details ›'}
               </span>
             </div>
           )}
@@ -3292,16 +3288,6 @@ export function App() {
               onClick={() => setRightTab('structure')}
             >
               {lang === 'zh' ? '期权/结构' : 'Structure'}
-            </button>
-            <button
-              type="button"
-              className={`rs-tab ${rightTab === 'news' ? 'active' : ''}`}
-              onClick={() => setRightTab('news')}
-            >
-              {lang === 'zh' ? '快讯' : 'News'}
-              {(macroData?.within_30m_count ?? 0) > 0 && (
-                <span className="rs-tab-badge">{macroData?.within_30m_count}</span>
-              )}
             </button>
           </div>
 
@@ -3576,72 +3562,6 @@ export function App() {
             </div>
           )}
 
-          {/* Card 0.8: 实时大新闻 · 半小时市场动向 */}
-          {rightTab === 'news' && macroData && (
-            <div className="panel-card news-card">
-              <div className="card-header">
-                <span>{lang === 'zh' ? '实时快讯 · 市场动向' : 'Live Breaking News'}</span>
-                <span className="news-30m-badge">
-                  {lang === 'zh'
-                    ? `近30分 ${macroData.within_30m_count} 条`
-                    : `${macroData.within_30m_count} in 30m`}
-                </span>
-              </div>
-
-              <div className="news-filter-row">
-                <button
-                  className={newsFilter === 'all' ? 'active' : ''}
-                  onClick={() => setNewsFilter('all')}
-                >
-                  {lang === 'zh' ? '全部快讯' : 'All'}
-                </button>
-                <button
-                  className={newsFilter === '30m' ? 'active' : ''}
-                  onClick={() => setNewsFilter('30m')}
-                >
-                  {lang === 'zh' ? '半小时 / 重磅' : '30m / High'}
-                </button>
-                <span className="news-updated">{macroData.updated_at}</span>
-              </div>
-
-              <div className="news-list">
-                {macroData.news
-                  .filter((n) =>
-                    newsFilter === '30m'
-                      ? n.is_within_30m || n.importance === 'high'
-                      : true
-                  )
-                  .map((n) => (
-                    <div
-                      key={n.id}
-                      className={`news-item ${n.is_within_30m ? 'fresh-30m' : ''} ${n.importance}`}
-                    >
-                      <div className="ni-meta">
-                        <span className={`ni-age ${n.is_within_30m ? 'hot' : ''}`}>
-                          {lang === 'zh' ? n.age_label_zh : n.age_label_en} ({n.time_str})
-                        </span>
-                        <span className={`ni-tag ${n.sentiment}`}>
-                          {lang === 'zh' ? n.tag_zh : n.tag_en}
-                        </span>
-                      </div>
-                      <div className="ni-text">{n.text}</div>
-                    </div>
-                  ))}
-                {macroData.news.filter((n) =>
-                  newsFilter === '30m'
-                    ? n.is_within_30m || n.importance === 'high'
-                    : true
-                ).length === 0 && (
-                  <div className="overview-summary">
-                    {lang === 'zh'
-                      ? '近 30 分钟暂无突发重磅快讯，可切换「全部快讯」查看最新市场动态。'
-                      : 'No high-impact flashes in the last 30m.'}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {rightTab === 'structure' && (
             <>
               {/* Card 1: Multi-factor Bias */}
@@ -3841,9 +3761,6 @@ export function App() {
         >
           <span className="mbn-ico">
             🧭
-            {macroData && macroData.within_30m_count > 0 && (
-              <span className="mbn-badge">{macroData.within_30m_count}</span>
-            )}
           </span>
           <span>{lang === 'zh' ? '建议' : 'Intel'}</span>
         </button>
