@@ -604,35 +604,52 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
       }
     }
 
-    // 1.5 Dual Moving Average (色弱友好高明度差异：快线=深暗红 #B91C1C 2px, 慢线=亮翠绿 #00C878 3px)
+    // 1.5 Dual Moving Average (高对比白线20 / 明黄60，带细描边避免融进浅色或红绿K线)
     if (layers.dual_ma && data.analysis.dual_ma && data.analysis.dual_ma.fast_line.length > 0) {
+      const fastPts = data.analysis.dual_ma.fast_line.map((p) => ({
+        time: p.time as UTCTimestamp,
+        value: p.value,
+      }));
+      const slowPts = data.analysis.dual_ma.slow_line.map((p) => ({
+        time: p.time as UTCTimestamp,
+        value: p.value,
+      }));
+
+      const fastHalo = mainChart.addSeries(LineSeries, {
+        color: '#1C1C1E',
+        lineWidth: 4,
+        priceLineVisible: false,
+        lastValueVisible: true,
+        crosshairMarkerVisible: false,
+      });
+      fastHalo.setData(fastPts);
+
       const fastSeries = mainChart.addSeries(LineSeries, {
-        color: '#B91C1C',
+        color: '#FFFFFF',
         lineWidth: 2,
         priceLineVisible: false,
-        lastValueVisible: true,
+        lastValueVisible: false,
         crosshairMarkerVisible: true,
       });
-      fastSeries.setData(
-        data.analysis.dual_ma.fast_line.map((p) => ({
-          time: p.time as UTCTimestamp,
-          value: p.value,
-        }))
-      );
+      fastSeries.setData(fastPts);
 
-      const slowSeries = mainChart.addSeries(LineSeries, {
-        color: '#00C878',
-        lineWidth: 3,
+      const slowHalo = mainChart.addSeries(LineSeries, {
+        color: '#B45309',
+        lineWidth: 4,
         priceLineVisible: false,
         lastValueVisible: true,
+        crosshairMarkerVisible: false,
+      });
+      slowHalo.setData(slowPts);
+
+      const slowSeries = mainChart.addSeries(LineSeries, {
+        color: '#FDE047',
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: false,
         crosshairMarkerVisible: true,
       });
-      slowSeries.setData(
-        data.analysis.dual_ma.slow_line.map((p) => ({
-          time: p.time as UTCTimestamp,
-          value: p.value,
-        }))
-      );
+      slowSeries.setData(slowPts);
     }
 
     // 1.6 Bull Market Support Band (牛熊20带: EMA20 + MA20/SMA20)
@@ -900,7 +917,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cF.time as UTCTimestamp,
           position: 'aboveBar',
-          color: '#B91C1C',
+          color: '#1C1C1E',
           shape: 'arrowDown',
           text: `${fastP}扣(${isLow ? '低' : '高'})`,
           size: 1.0,
@@ -913,7 +930,7 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
         markers.push({
           time: cS.time as UTCTimestamp,
           position: 'belowBar',
-          color: '#00A866',
+          color: '#CA8A04',
           shape: 'arrowUp',
           text: `${slowP}扣(${isLowS ? '低' : '高'})`,
           size: 1.0,
@@ -1696,8 +1713,8 @@ const ChartPanelInner: React.FC<ChartPanelProps> = ({
     activeChips.push({
       key: 'dual_ma',
       label: `${data.analysis.dual_ma.ma_type.toUpperCase()} ${data.analysis.dual_ma.fast_period}/${data.analysis.dual_ma.slow_period}`,
-      color: '#B91C1C',
-      color2: '#00C878',
+      color: '#FFFFFF',
+      color2: '#FACC15',
     });
   }
   if (layers.ma5) activeChips.push({ key: 'ma5', label: 'MA5', color: '#2563EB' });

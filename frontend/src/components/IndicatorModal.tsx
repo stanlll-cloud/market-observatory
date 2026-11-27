@@ -127,9 +127,9 @@ export const IndicatorModal: React.FC<IndicatorModalProps> = ({
         group: 'trend',
         titleZh: `双均线主轨 (${maConfig.type.toUpperCase()} ${maConfig.fast}/${maConfig.slow})`,
         titleEn: `Dual MA (${maConfig.type.toUpperCase()} ${maConfig.fast}/${maConfig.slow})`,
-        descZh: '高明度对比：深红20快线 / 亮翠绿60慢线 + 金叉死叉',
-        descEn: 'High-luminance contrast: Deep crimson fast / bright mint slow',
-        color: '#B91C1C',
+        descZh: '白线20快线 / 明黄60慢线（带描边高对比） + 金叉死叉',
+        descEn: 'High-contrast white fast / vivid yellow slow MA + crosses',
+        color: '#FACC15',
         keywords: 'ema sma dual ma 双均线 均线 趋势 20 60',
       },
       {
